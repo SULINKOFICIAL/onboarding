@@ -75,76 +75,125 @@
 
 @section('custom-footer')
     <script>
-        const companyZipCodeInput = document.getElementById('company_zip_code');
-        const zipAddressFields = document.getElementById('zip-address-fields');
-        const companyCityStateInput = document.getElementById('company_city_state');
-        const companyAddressInput = document.getElementById('company_address');
-        const companyNeighborhoodInput = document.getElementById('company_neighborhood');
+        // Estado global
+        const $companyZipCodeInput = $('#company_zip_code');
+        const $zipAddressFields = $('#zip-address-fields');
+        const $companyCityStateInput = $('#company_city_state');
+        const $companyAddressInput = $('#company_address');
+        const $companyNeighborhoodInput = $('#company_neighborhood');
+        const $fillTestDataButton = $('#fill-test-data');
 
+        // Helpers / utilitários
+        /**
+         * Retorna apenas os digitos do CEP para garantir validacao consistente.
+         * Centraliza a regra de higienizacao usada em mais de um ponto.
+         */
+        function getZipCodeDigits(value) {
+            return value.replace(/\D/g, '').slice(0, 8);
+        }
+
+        /**
+         * Formata CEP no padrao 00000-000 sem alterar a regra de preenchimento.
+         * Mantem o mesmo comportamento do fluxo anterior.
+         */
+        function formatZipCode(value) {
+            const zipCodeDigits = getZipCodeDigits(value);
+            if (zipCodeDigits.length <= 5) {
+                return zipCodeDigits;
+            }
+
+            return `${zipCodeDigits.slice(0, 5)}-${zipCodeDigits.slice(5)}`;
+        }
+
+        // Funções de renderização / UI
+        /**
+         * Exibe campos de endereco quando o CEP estiver completo.
+         * Evita esconder campos ja preenchidos apos interacoes do usuario.
+         */
         function showZipAddressFields() {
-            if (!zipAddressFields) {
+            if (!$zipAddressFields.length) {
                 return;
             }
-            zipAddressFields.classList.remove('d-none');
+
+            $zipAddressFields.removeClass('d-none');
         }
 
-        function formatZipCode(value) {
-            const digits = value.replace(/\D/g, '').slice(0, 8);
-            if (digits.length <= 5) {
-                return digits;
-            }
-            return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+        /**
+         * Preenche campos de endereco com resposta da API do CEP.
+         * Usa fallback vazio para manter estabilidade quando dados vierem incompletos.
+         */
+        function applyZipCodePayload(payload) {
+            $companyCityStateInput.val(`${payload.localidade || ''} - ${payload.uf || ''}`.trim());
+            $companyAddressInput.val(payload.logradouro || '');
+            $companyNeighborhoodInput.val(payload.bairro || '');
         }
 
-        async function lookupZipCode(zipCodeDigits) {
-            try {
-                const response = await fetch(`https://viacep.com.br/ws/${zipCodeDigits}/json/`);
-                if (!response.ok) {
-                    return;
-                }
+        /**
+         * Consulta o CEP na API e aplica os dados quando o retorno for valido.
+         * Mantem o comportamento de nao interromper o fluxo em caso de erro de rede.
+         */
+        function lookupZipCode(zipCodeDigits) {
+            return $.getJSON(`https://viacep.com.br/ws/${zipCodeDigits}/json/`)
+                .done(function (payload) {
+                    // Se a API indicar CEP invalido, nao atualiza os campos.
+                    if (payload.erro) {
+                        return;
+                    }
 
-                const payload = await response.json();
-                if (payload.erro) {
-                    return;
-                }
-
-                if (companyCityStateInput) {
-                    companyCityStateInput.value = `${payload.localidade || ''} - ${payload.uf || ''}`.trim();
-                }
-                if (companyAddressInput) {
-                    companyAddressInput.value = payload.logradouro || '';
-                }
-                if (companyNeighborhoodInput) {
-                    companyNeighborhoodInput.value = payload.bairro || '';
-                }
-            } catch (error) {
-                console.error('Falha ao buscar CEP', error);
-            }
+                    applyZipCodePayload(payload);
+                })
+                .fail(function (error) {
+                    console.error('Falha ao buscar CEP', error);
+                });
         }
 
-        companyZipCodeInput?.addEventListener('input', function () {
-            companyZipCodeInput.value = formatZipCode(companyZipCodeInput.value);
-            if (companyZipCodeInput.value.replace(/\D/g, '').length === 8) {
-                showZipAddressFields();
-            }
-        });
-
-        companyZipCodeInput?.addEventListener('blur', function () {
-            const zipCodeDigits = companyZipCodeInput.value.replace(/\D/g, '');
-            if (zipCodeDigits.length === 8) {
-                showZipAddressFields();
-                lookupZipCode(zipCodeDigits);
-            }
-        });
-
-        document.getElementById('fill-test-data')?.addEventListener('click', function () {
-            companyZipCodeInput.value = '01310-100';
+        /**
+         * Preenche dados de teste da etapa de endereco para acelerar validacoes.
+         * Mantem os mesmos valores usados anteriormente.
+         */
+        function fillTestDataStep() {
+            $companyZipCodeInput.val('01310-100');
             showZipAddressFields();
-            document.getElementById('company_city_state').value = 'Sao Paulo - SP';
-            document.getElementById('company_address').value = 'Avenida Paulista';
-            document.getElementById('company_neighborhood').value = 'Bela Vista';
-            document.getElementById('company_number').value = '1000';
-            document.getElementById('company_complement').value = 'Conjunto 101';
+            $companyCityStateInput.val('Sao Paulo - SP');
+            $companyAddressInput.val('Avenida Paulista');
+            $companyNeighborhoodInput.val('Bela Vista');
+            $('#company_number').val('1000');
+            $('#company_complement').val('Conjunto 101');
+        }
+
+        // Event listeners
+        /**
+         * Explica o que este listener escuta, o que ele dispara
+         * e por que esse comportamento é necessário neste arquivo.
+         */
+        $companyZipCodeInput.on('input', function () {
+            const formattedZipCode = formatZipCode($companyZipCodeInput.val() || '');
+            $companyZipCodeInput.val(formattedZipCode);
+
+            // Exibe os campos assim que houver CEP completo para reduzir friccao.
+            if (getZipCodeDigits(formattedZipCode).length === 8) {
+                showZipAddressFields();
+            }
         });
+
+        /**
+         * Explica o que este listener escuta, o que ele dispara
+         * e por que esse comportamento é necessário neste arquivo.
+         */
+        $companyZipCodeInput.on('blur', function () {
+            const zipCodeDigits = getZipCodeDigits($companyZipCodeInput.val() || '');
+            if (zipCodeDigits.length !== 8) {
+                return;
+            }
+
+            showZipAddressFields();
+            lookupZipCode(zipCodeDigits);
+        });
+
+        /**
+         * Explica o que este listener escuta, o que ele dispara
+         * e por que esse comportamento é necessário neste arquivo.
+         */
+        $fillTestDataButton.on('click', fillTestDataStep);
     </script>
 @endsection

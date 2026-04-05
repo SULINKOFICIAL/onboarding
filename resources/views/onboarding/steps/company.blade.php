@@ -29,11 +29,37 @@
 
 @section('custom-footer')
     <script>
-        document.getElementById('fill-test-data')?.addEventListener('click', function () {
-            const radio = document.querySelector('input[name="company_profile"][value="simples_nacional"]');
-            if (radio) {
-                radio.checked = true;
+        // Estado global
+        const $fillTestDataButton = $('#fill-test-data');
+
+        // Helpers / utilitários
+        /**
+         * Marca uma opcao de radio quando ela existir para evitar falhas silenciosas.
+         * Centraliza a regra de selecao para manter o script simples.
+         */
+        function setRadioValue(selector) {
+            const $radio = $(selector);
+            if (!$radio.length) {
+                return;
             }
-        });
+
+            $radio.prop('checked', true);
+        }
+
+        // Funções de renderização / UI
+        /**
+         * Preenche a opcao padrao de perfil para acelerar testes da etapa.
+         * Mantem a mesma opcao usada antes da refatoracao.
+         */
+        function fillTestDataStep() {
+            setRadioValue('input[name="company_profile"][value="simples_nacional"]');
+        }
+
+        // Event listeners
+        /**
+         * Explica o que este listener escuta, o que ele dispara
+         * e por que esse comportamento é necessário neste arquivo.
+         */
+        $fillTestDataButton.on('click', fillTestDataStep);
     </script>
 @endsection

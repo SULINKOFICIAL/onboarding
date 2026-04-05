@@ -10,6 +10,10 @@
     <label class="form-label" for="phone">Numero</label>
     <input class="form-control" id="phone" name="phone" value="{{ old('phone', $data['phone'] ?? '') }}" placeholder="(11) 99999-9999">
 </div>
+<div class="mb-3 d-none" id="cpf-field">
+    <label class="form-label" for="cpf">CPF</label>
+    <input class="form-control input-cpf" id="cpf" name="cpf" value="{{ old('cpf', $data['cpf'] ?? ($data['cif'] ?? '')) }}" placeholder="000.000.000-00">
+</div>
 <div class="mb-3" id="cnpj-field">
     <label class="form-label" for="cnpj">CNPJ</label>
     <input class="form-control" id="cnpj" name="cnpj" value="{{ old('cnpj', $data['cnpj'] ?? '') }}" placeholder="00.000.000/0000-00">
@@ -17,10 +21,6 @@
 <div class="form-check mb-3">
     <input class="form-check-input" id="no_cnpj" type="checkbox" name="no_cnpj" value="1" @checked(old('no_cnpj', $data['no_cnpj'] ?? false))>
     <label class="form-check-label" for="no_cnpj">Nao tenho CNPJ</label>
-</div>
-<div class="mb-3 d-none" id="cif-field">
-    <label class="form-label" for="cif">CIF</label>
-    <input class="form-control" id="cif" name="cif" value="{{ old('cif', $data['cif'] ?? '') }}" placeholder="Informe seu CIF">
 </div>
 <div class="mb-3">
     <label class="form-label" for="password">Senha</label>
@@ -60,51 +60,108 @@
 
 @section('custom-footer')
     <script>
-        const noCnpjCheckbox = document.getElementById('no_cnpj');
-        const cnpjField = document.getElementById('cnpj-field');
-        const hasCouponCheckbox = document.getElementById('has_coupon');
-        const couponField = document.getElementById('coupon-field');
-        const fillTestDataButton = document.getElementById('fill-test-data');
+        // Estado global
+        const $noCnpjCheckbox = $('#no_cnpj');
+        const $cnpjField = $('#cnpj-field');
+        const $cpfField = $('#cpf-field');
+        const $hasCouponCheckbox = $('#has_coupon');
+        const $couponField = $('#coupon-field');
+        const $fillTestDataButton = $('#fill-test-data');
 
+        // Helpers / utilitários
+        /**
+         * Define valor em um input quando ele existe para evitar erros em etapas diferentes.
+         * Mantem o preenchimento de teste centralizado e reutilizavel.
+         */
+        function setInputValue(selector, value) {
+            const $input = $(selector);
+            if (!$input.length) {
+                return;
+            }
+
+            $input.val(value);
+        }
+
+        /**
+         * Define estado de checkbox e dispara change para manter efeitos colaterais originais.
+         * O disparo de evento garante a mesma logica das interacoes manuais.
+         */
+        function setCheckboxValue(selector, isChecked) {
+            const $checkbox = $(selector);
+            if (!$checkbox.length) {
+                return;
+            }
+
+            $checkbox.prop('checked', isChecked).trigger('change');
+        }
+
+        // Funções de renderização / UI
+        /**
+         * Controla exibicao de CNPJ e CPF com base no checkbox "Nao tenho CNPJ".
+         * Essa regra preserva a alternancia original entre os dois campos.
+         */
         function toggleDocumentFields() {
-            if (!noCnpjCheckbox || !cnpjField) {
+            if (!$noCnpjCheckbox.length || !$cnpjField.length || !$cpfField.length) {
                 return;
             }
 
-            const withoutCnpj = noCnpjCheckbox.checked;
-            cnpjField.classList.toggle('d-none', withoutCnpj);
-            document.getElementById('cif-field')?.classList.toggle('d-none', !withoutCnpj);
+            const withoutCnpj = $noCnpjCheckbox.is(':checked');
+            $cnpjField.toggleClass('d-none', withoutCnpj);
+            $cpfField.toggleClass('d-none', !withoutCnpj);
         }
 
+        /**
+         * Controla exibicao do campo de cupom com base no checkbox correspondente.
+         * Mantem o mesmo comportamento do formulario antes da refatoracao.
+         */
         function toggleCouponField() {
-            if (!hasCouponCheckbox || !couponField) {
+            if (!$hasCouponCheckbox.length || !$couponField.length) {
                 return;
             }
 
-            couponField.classList.toggle('d-none', !hasCouponCheckbox.checked);
+            $couponField.toggleClass('d-none', !$hasCouponCheckbox.is(':checked'));
         }
 
-        noCnpjCheckbox?.addEventListener('change', toggleDocumentFields);
-        hasCouponCheckbox?.addEventListener('change', toggleCouponField);
+        /**
+         * Preenche dados de teste da etapa atual para acelerar validacoes manuais.
+         * Mantem os mesmos valores e fluxo utilizados anteriormente.
+         */
+        function fillTestDataStep() {
+            setInputValue('#full_name', 'Usuario Teste');
+            setInputValue('#email', 'teste+onboarding@micore.com');
+            setInputValue('#phone', '11999999999');
+            setCheckboxValue('#no_cnpj', false);
+            setInputValue('#cnpj', '12345678000199');
+            setInputValue('#password', 'Senha@12345');
+            setCheckboxValue('#has_coupon', true);
+            setInputValue('#coupon_code', 'BEMVINDO10');
+
+            // Mantem checkboxes opcionais ativados no preenchimento de teste.
+            $('#tips_whatsapp').prop('checked', true);
+            $('#tips_email').prop('checked', true);
+        }
+
+        // Event listeners
+        /**
+         * Explica o que este listener escuta, o que ele dispara
+         * e por que esse comportamento é necessário neste arquivo.
+         */
+        $noCnpjCheckbox.on('change', toggleDocumentFields);
+
+        /**
+         * Explica o que este listener escuta, o que ele dispara
+         * e por que esse comportamento é necessário neste arquivo.
+         */
+        $hasCouponCheckbox.on('change', toggleCouponField);
+
+        /**
+         * Explica o que este listener escuta, o que ele dispara
+         * e por que esse comportamento é necessário neste arquivo.
+         */
+        $fillTestDataButton.on('click', fillTestDataStep);
+
+        // Garante consistencia visual ao carregar pagina com dados anteriores.
         toggleDocumentFields();
         toggleCouponField();
-
-        fillTestDataButton?.addEventListener('click', function () {
-            document.getElementById('full_name').value = 'Usuario Teste';
-            document.getElementById('email').value = 'teste+onboarding@micore.com';
-            document.getElementById('phone').value = '11999999999';
-            noCnpjCheckbox.checked = false;
-            noCnpjCheckbox.dispatchEvent(new Event('change'));
-            document.getElementById('cnpj').value = '12345678000199';
-            document.getElementById('password').value = 'Senha@12345';
-            hasCouponCheckbox.checked = true;
-            hasCouponCheckbox.dispatchEvent(new Event('change'));
-            document.getElementById('coupon_code').value = 'BEMVINDO10';
-
-            const tipsWhatsapp = document.getElementById('tips_whatsapp');
-            const tipsEmail = document.getElementById('tips_email');
-            if (tipsWhatsapp) tipsWhatsapp.checked = true;
-            if (tipsEmail) tipsEmail.checked = true;
-        });
     </script>
 @endsection

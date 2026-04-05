@@ -28,11 +28,37 @@
 
 @section('custom-footer')
     <script>
-        document.getElementById('fill-test-data')?.addEventListener('click', function () {
-            const radio = document.querySelector('input[name="main_goal"][value="vender_online"]');
-            if (radio) {
-                radio.checked = true;
+        // Estado global
+        const $fillTestDataButton = $('#fill-test-data');
+
+        // Helpers / utilitários
+        /**
+         * Marca uma opcao de radio quando o elemento estiver disponivel no DOM.
+         * Evita duplicar validacoes de existencia no restante do script.
+         */
+        function setRadioValue(selector) {
+            const $radio = $(selector);
+            if (!$radio.length) {
+                return;
             }
-        });
+
+            $radio.prop('checked', true);
+        }
+
+        // Funções de renderização / UI
+        /**
+         * Preenche a meta principal padrao para testes rapidos desta etapa.
+         * Preserva o comportamento anterior sem alterar regra de negocio.
+         */
+        function fillTestDataStep() {
+            setRadioValue('input[name="main_goal"][value="vender_online"]');
+        }
+
+        // Event listeners
+        /**
+         * Explica o que este listener escuta, o que ele dispara
+         * e por que esse comportamento é necessário neste arquivo.
+         */
+        $fillTestDataButton.on('click', fillTestDataStep);
     </script>
 @endsection

@@ -15,12 +15,13 @@ class OnboardingController extends Controller
         'address' => 'Address',
     ];
 
-    public function showStep(Request $request, ?string $step = null): View|RedirectResponse
+    public function show(Request $request): View
     {
-        $currentStep = $this->normalizeStep($step);
-        $stepNames = array_keys(self::STEPS);
-        $currentStepIndex = array_search($currentStep, $stepNames, true);
-        $previousStep = $currentStepIndex > 0 ? $stepNames[$currentStepIndex - 1] : null;
+        $currentStep = $this->normalizeStep($request->session()->get('onboarding.current_step'));
+        $request->session()->put('onboarding.current_step', $currentStep);
+
+        $currentStepIndex = $this->getStepIndex($currentStep);
+        $previousStep = $this->getPreviousStep($currentStep);
         $data = $request->session()->get('onboarding.form', []);
 
         return view('onboarding.index', [
@@ -32,20 +33,31 @@ class OnboardingController extends Controller
         ]);
     }
 
-    public function submitStep(Request $request, string $step): RedirectResponse
+    public function submit(Request $request): RedirectResponse
     {
-        $currentStep = $this->normalizeStep($step);
-        $stepNames = array_keys(self::STEPS);
-        $currentStepIndex = array_search($currentStep, $stepNames, true);
-        $submittedData = $request->except(['_token']);
+        $sessionStep = $request->session()->get('onboarding.current_step');
+        $currentStep = $this->normalizeStep($request->input('current_step', $sessionStep));
+        $navigation = $request->input('navigation', 'next');
+
+        $submittedData = $request->except(['_token', 'current_step', 'navigation']);
         $storedData = array_merge($request->session()->get('onboarding.form', []), $submittedData);
         $request->session()->put('onboarding.form', $storedData);
 
-        if ($currentStepIndex < count($stepNames) - 1) {
-            return redirect()->route('onboarding.step', ['step' => $stepNames[$currentStepIndex + 1]]);
+        if ($navigation === 'back') {
+            $request->session()->put('onboarding.current_step', $this->getPreviousStep($currentStep) ?? $currentStep);
+
+            return redirect()->route('onboarding.show');
+        }
+
+        $nextStep = $this->getNextStep($currentStep);
+        if ($nextStep) {
+            $request->session()->put('onboarding.current_step', $nextStep);
+
+            return redirect()->route('onboarding.show');
         }
 
         $request->session()->forget('onboarding.form');
+        $request->session()->forget('onboarding.current_step');
 
         return redirect()
             ->route('onboarding.success')
@@ -56,7 +68,7 @@ class OnboardingController extends Controller
     {
         $submittedData = $request->session()->get('onboarding_submitted');
         if (!$submittedData) {
-            return redirect()->route('onboarding.step', ['step' => 'account']);
+            return redirect()->route('onboarding.show');
         }
 
         return view('onboarding.success', [
@@ -71,5 +83,36 @@ class OnboardingController extends Controller
         }
 
         return $step;
+    }
+
+    private function getStepNames(): array
+    {
+        return array_keys(self::STEPS);
+    }
+
+    private function getStepIndex(string $step): int
+    {
+        return array_search($step, $this->getStepNames(), true);
+    }
+
+    private function getPreviousStep(string $currentStep): ?string
+    {
+        $currentStepIndex = $this->getStepIndex($currentStep);
+        if ($currentStepIndex <= 0) {
+            return null;
+        }
+
+        return $this->getStepNames()[$currentStepIndex - 1];
+    }
+
+    private function getNextStep(string $currentStep): ?string
+    {
+        $currentStepIndex = $this->getStepIndex($currentStep);
+        $stepNames = $this->getStepNames();
+        if ($currentStepIndex >= count($stepNames) - 1) {
+            return null;
+        }
+
+        return $stepNames[$currentStepIndex + 1];
     }
 }
