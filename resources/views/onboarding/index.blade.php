@@ -7,11 +7,11 @@
         <div class="row min-vh-100">
             <div class="col-12 col-lg-6 bg-white d-flex align-items-center">
                 <div class="w-100 px-4 px-md-5 py-4 mx-auto" style="max-width: 640px;">
-                    @if ($step !== 4)
+                    @if ($currentStep !== 'address')
                         <div class="d-flex gap-2 mb-3" aria-label="Progresso do onboarding">
                             @for ($bar = 1; $bar <= 3; $bar++)
                                 <div
-                                    class="flex-fill rounded-pill {{ $step >= $bar ? 'bg-primary' : 'bg-secondary-subtle' }}"
+                                    class="flex-fill rounded-pill {{ ($currentStepIndex + 1) >= $bar ? 'bg-primary' : 'bg-secondary-subtle' }}"
                                     style="height: 8px;"
                                 ></div>
                             @endfor
@@ -21,13 +21,12 @@
                         </div>
                     @endif
 
-                    <h1 class="h3 mb-3">Onboarding - Etapa {{ $step }} de 4</h1>
+                    <h1 class="h3 mb-3">Onboarding - Etapa {{ $currentStepIndex + 1 }} de {{ count($stepLabels) }}</h1>
 
                     <div class="d-flex gap-2 mb-4">
-                        <span class="badge {{ $step === 1 ? 'bg-primary' : 'bg-secondary' }}">1. Conta</span>
-                        <span class="badge {{ $step === 2 ? 'bg-primary' : 'bg-secondary' }}">2. Empresa</span>
-                        <span class="badge {{ $step === 3 ? 'bg-primary' : 'bg-secondary' }}">3. Endereço</span>
-                        <span class="badge {{ $step === 4 ? 'bg-primary' : 'bg-secondary' }}">4. Plano</span>
+                        @foreach ($stepLabels as $stepName => $stepLabel)
+                            <span class="badge {{ $currentStep === $stepName ? 'bg-primary' : 'bg-secondary' }}">{{ $stepLabel }}</span>
+                        @endforeach
                     </div>
 
                     @if ($errors->any())
@@ -38,20 +37,20 @@
                         </div>
                     @endif
 
-                    <form method="POST" action="{{ route('onboarding.submit', ['step' => $step]) }}">
+                    <form method="POST" action="{{ route('onboarding.submit', ['step' => $currentStep]) }}">
                         @csrf
 
-                        @includeIf('onboarding.steps.step-' . $step)
+                        @includeIf('onboarding.steps.' . $currentStep)
 
                         <div class="d-flex justify-content-between mt-4">
-                            @if ($step > 1)
-                                <a class="btn btn-outline-secondary" href="{{ route('onboarding.step', ['step' => $step - 1]) }}">Voltar</a>
+                            @if ($previousStep)
+                                <a class="btn btn-outline-secondary" href="{{ route('onboarding.step', ['step' => $previousStep]) }}">Voltar</a>
                             @else
                                 <span></span>
                             @endif
 
                             <button class="btn btn-primary" type="submit">
-                                {{ $step === 1 ? 'Comecar a testar' : ($step < 4 ? 'Continuar' : 'Finalizar') }}
+                                {{ $currentStep === 'account' ? 'Comecar a testar' : ($currentStep !== 'address' ? 'Continuar' : 'Finalizar') }}
                             </button>
                         </div>
                     </form>

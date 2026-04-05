@@ -4,7 +4,7 @@ use App\Http\Controllers\OnboardingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return redirect()->route('onboarding.step', ['step' => 1]);
+    return redirect()->route('onboarding.step', ['step' => 'account']);
 });
 
 Route::prefix('onboarding')->group(function () {
