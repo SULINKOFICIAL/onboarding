@@ -13,7 +13,7 @@ class OnboardingController extends Controller
         $step = $this->normalizeStep($step);
         $data = $request->session()->get('onboarding.form', []);
 
-        return view('onboarding.form', [
+        return view('onboarding.index', [
             'step' => $step,
             'data' => $data,
         ]);
