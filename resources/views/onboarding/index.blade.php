@@ -61,7 +61,7 @@
             <div class="col-12 col-lg-6 d-flex align-items-end p-4 justify-content-center bg-light position-relative" style="background: url('{{ asset('assets/media/bg-big.jpg') }}') no-repeat center center; background-size: cover;">
                 <div class="z-index-2 position-absolute mb-20">
                     <p class="text-white text-center fs-2x fw-bolder">Tudo o que sua empresa precisa, <span style="color: #62de04">no lugar certo</span>.</p>
-                    <p class="text-white text-centers fs-2x fw-bolder">Tudo o que sua empresa precisa, <span style="color: #62de04">no lugar certo</span>.</p>
+                    <p class="text-white fs-6">Tudo o que sua empresa precisa, <span style="color: #62de04">no lugar certo</span>.</p>
                 </div>
                 <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(0deg, #131924f2 20%, #1d253438 80%);"></div>
             </div>
