@@ -66,12 +66,10 @@
             // Estado global
             const stepOrder = ['account', 'company', 'goal', 'address'];
             const $form = $('form');
-            const $finalizingMessage = $('#onboarding-finalizing-message');
             const $sidePanel = $('#onboarding-side-panel');
             const defaultBackgroundImage = '{{ asset('assets/media/bg-big.jpg') }}';
             const addressBackgroundImage = '{{ asset('assets/media/bg-finish.jpg') }}';
             let currentStep = 'account';
-            let isFinishing = false;
 
             // Helpers / utilitarios
             /**
@@ -253,9 +251,6 @@
                 $('.onboarding-step').hide();
                 $(`.onboarding-step[data-step="${stepName}"]`).show();
                 updateSidePanelBackground(stepName);
-                if (stepName !== 'address') {
-                    $finalizingMessage.stop(true, true).hide();
-                }
             }
 
             /**
@@ -268,27 +263,11 @@
             }
 
             /**
-             * Exibe mensagem final com animacao para indicar encaminhamento.
-             * Reforca feedback ao usuario antes do encerramento do fluxo.
-             */
-            function showFinalizingMessage() {
-                $finalizingMessage.stop(true, true).fadeIn(300);
-            }
-
-            /**
              * Finaliza fluxo do onboarding com feedback visual na tela.
              * Esta acao deve ocorrer apenas no botao final da etapa CEP.
              */
             function finalizeOnboardingFlow() {
-                isFinishing = true;
-                showFinalizingMessage();
-
-                // Aguarda o feedback visual antes de reiniciar o fluxo.
-                setTimeout(function () {
-                    currentStep = 'account';
-                    showStep(currentStep);
-                    isFinishing = false;
-                }, 1600);
+                $('#onboarding-finalizing-message').stop(true, true).fadeIn(300);
             }
 
             /**
@@ -307,10 +286,6 @@
              */
             $form.on('click', 'button[name="navigation"]', function (event) {
                 event.preventDefault();
-
-                if (isFinishing) {
-                    return;
-                }
 
                 const clickedStepName = $(this).closest('.onboarding-step').data('step') || getVisibleStepName();
                 const direction = $(this).val();
