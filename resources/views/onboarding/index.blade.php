@@ -313,15 +313,8 @@
                 }
 
                 const clickedStepName = $(this).closest('.onboarding-step').data('step') || getVisibleStepName();
-                const isAddressFinishButton =
-                    clickedStepName === 'address' && $(this).is('#onboarding-finish-button');
                 const direction = $(this).val();
                 if (!canProceedFromCurrentStep(clickedStepName, direction)) {
-                    return;
-                }
-
-                if (isAddressFinishButton && direction === 'next') {
-                    finalizeOnboardingFlow();
                     return;
                 }
 
