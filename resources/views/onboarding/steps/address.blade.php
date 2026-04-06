@@ -84,15 +84,6 @@
     <button class="btn btn-light" type="submit" name="navigation" value="back" formnovalidate>Voltar</button>
     <button id="onboarding-finish-button" class="btn btn-primary w-100" type="submit" name="navigation" value="next">Finalizar</button>
 </div>
-<div
-    id="onboarding-finalizing-message"
-    class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center text-center px-5"
-    style="display: none; z-index: 2000; background-color: rgba(255, 255, 255, 0.96);"
->
-    <h1 class="fw-bolder mb-0 text-gray-900">
-        Estamos finalizando seu cadastro, vamos te encaminhando para o seu sistema.
-    </h1>
-</div>
 
 <button
     id="fill-test-data-address"

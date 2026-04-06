@@ -58,6 +58,18 @@
         </div>
     </div>
 
+    <div
+        id="onboarding-finalizing-message"
+        class="position-fixed top-0 start-0 w-100 h-100 px-5"
+        style="display: none; z-index: 2000; background-color: rgba(255, 255, 255, 0.96);"
+    >
+        <div class="d-flex align-items-center justify-content-center h-100">
+            <h1 class="fw-bolder mb-0 text-gray-900">
+                Estamos finalizando seu cadastro, vamos te encaminhando para o seu sistema.
+            </h1>
+        </div>
+    </div>
+
 @endsection
 
 @push('step-scripts')
