@@ -48,15 +48,16 @@
         </div>
         <div class="col-md-4">
             <label class="form-label text-gray-700 fw-bolder mb-0" for="company_state">Estado</label>
-            <input
-                class="form-control text-uppercase"
-                id="company_state"
-                name="company_state"
-                value="{{ $companyState }}"
-                maxlength="2"
-                placeholder="UF"
-                required
-            >
+            <select class="form-select" id="company_state" name="company_state" required>
+                <option value="">Selecione</option>
+                @foreach ([
+                    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS',
+                    'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC',
+                    'SP', 'SE', 'TO',
+                ] as $stateOption)
+                    <option value="{{ $stateOption }}" @selected($companyState === $stateOption)>{{ $stateOption }}</option>
+                @endforeach
+            </select>
         </div>
     </div>
     <input type="hidden" id="company_city_state" name="company_city_state" value="{{ $companyCityState }}">
