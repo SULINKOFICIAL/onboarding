@@ -14,25 +14,43 @@
 <div class="mb-3">
     <p class="form-label mb-2">Qual o perfil da empresa?</p>
 
-    <div class="form-check mb-2">
-        <input class="form-check-input" id="profile_lucro_presumido" type="radio" name="company_profile" value="lucro_presumido" @checked(old('company_profile', $data['company_profile'] ?? '') === 'lucro_presumido')>
-        <label class="form-check-label" for="profile_lucro_presumido">Lucro Presumido</label>
-    </div>
-    <div class="form-check mb-2">
-        <input class="form-check-input" id="profile_lucro_real" type="radio" name="company_profile" value="lucro_real" @checked(old('company_profile', $data['company_profile'] ?? '') === 'lucro_real')>
-        <label class="form-check-label" for="profile_lucro_real">Lucro Real</label>
-    </div>
-    <div class="form-check mb-2">
-        <input class="form-check-input" id="profile_simples_nacional" type="radio" name="company_profile" value="simples_nacional" @checked(old('company_profile', $data['company_profile'] ?? '') === 'simples_nacional')>
-        <label class="form-check-label" for="profile_simples_nacional">Simples Nacional</label>
-    </div>
-    <div class="form-check">
-        <input class="form-check-input" id="profile_mei" type="radio" name="company_profile" value="mei" @checked(old('company_profile', $data['company_profile'] ?? '') === 'mei')>
-        <label class="form-check-label" for="profile_mei">MEI</label>
+    <div class="row g-4 mt-1">
+        <div class="col-12 col-lg-6">
+            <input class="btn-check" id="profile_lucro_presumido" type="radio" name="company_profile" value="lucro_presumido" autocomplete="off" @checked(old('company_profile', $data['company_profile'] ?? '') === 'lucro_presumido')>
+            <label class="btn btn-light border border-2 rounded-4 p-6 text-start w-100 h-100 d-flex flex-column justify-content-center align-items-start" for="profile_lucro_presumido">
+                <span class="fs-2 fw-bold text-gray-900 mb-2">Lucro Presumido</span>
+                <span class="fs-4 text-gray-700 lh-sm">Regime baseado na estimativa de lucro</span>
+            </label>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <input class="btn-check" id="profile_lucro_real" type="radio" name="company_profile" value="lucro_real" autocomplete="off" @checked(old('company_profile', $data['company_profile'] ?? '') === 'lucro_real')>
+            <label class="btn btn-light border border-2 rounded-4 p-6 text-start w-100 h-100 d-flex flex-column justify-content-center align-items-start" for="profile_lucro_real">
+                <span class="fs-2 fw-bold text-gray-900 mb-2">Lucro Real</span>
+                <span class="fs-4 text-gray-700 lh-sm">Regime baseado no lucro efetivo da empresa</span>
+            </label>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <input class="btn-check" id="profile_simples_nacional" type="radio" name="company_profile" value="simples_nacional" autocomplete="off" @checked(old('company_profile', $data['company_profile'] ?? '') === 'simples_nacional')>
+            <label class="btn btn-light border border-2 rounded-4 p-6 text-start w-100 h-100 d-flex flex-column justify-content-center align-items-start" for="profile_simples_nacional">
+                <span class="fs-2 fw-bold text-gray-900 mb-2">Simples Nacional</span>
+                <span class="fs-4 text-gray-700 lh-sm">Regime simplificado para microempresa e empresa de pequeno porte</span>
+            </label>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <input class="btn-check" id="profile_mei" type="radio" name="company_profile" value="mei" autocomplete="off" @checked(old('company_profile', $data['company_profile'] ?? '') === 'mei')>
+            <label class="btn btn-light border border-2 rounded-4 p-6 text-start w-100 h-100 d-flex flex-column justify-content-center align-items-start" for="profile_mei">
+                <span class="fs-2 fw-bold text-gray-900 mb-2">MEI</span>
+                <span class="fs-4 text-gray-700 lh-sm">Regime simplificado para microempreendedor individual</span>
+            </label>
+        </div>
     </div>
 </div>
 
-<div class="mt-4">
+<div class="d-flex justify-content-between mt-4 gap-3">
+    <button class="btn btn-light" type="submit" name="navigation" value="back" formnovalidate>Voltar</button>
     <button class="btn btn-primary w-100" type="submit" name="navigation" value="next">Continuar</button>
 </div>
 
