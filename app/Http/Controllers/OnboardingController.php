@@ -12,7 +12,9 @@ use Illuminate\View\View;
 class OnboardingController extends Controller
 {
     private const DEFAULT_STEP = 'account';
-    private const FIND_CLIENT_ENDPOINT = '/api/central/encontrar-cliente';
+    private const CHECK_IDENTITY_ENDPOINT = '/api/central/onboarding/verificar-identidade';
+    private const SAVE_STEP_ENDPOINT = '/api/central/onboarding/salvar-etapa';
+    private const FINALIZE_ENDPOINT = '/api/central/onboarding/finalizar';
 
     private const STEPS = [
         'account' => 'Account',
@@ -93,7 +95,7 @@ class OnboardingController extends Controller
             'email' => ['required', 'email', 'max:255'],
         ]);
 
-        return $this->checkClientInCentral(
+        return $this->checkIdentityInCentral(
             ['email' => $payload['email']],
             'Falha ao consultar email na central durante onboarding.',
             ['email' => $payload['email']]
@@ -114,13 +116,44 @@ class OnboardingController extends Controller
         $documentType = $payload['type'];
         $documentValue = preg_replace('/\D+/', '', $payload['value']);
 
-        return $this->checkClientInCentral(
+        return $this->checkIdentityInCentral(
             [$documentType => $documentValue],
             'Falha ao consultar documento na central durante onboarding.',
             [
                 'document_type' => $documentType,
                 'document_value' => $documentValue,
             ]
+        );
+    }
+
+    public function saveStep(Request $request): JsonResponse
+    {
+        $payload = $request->validate([
+            'step' => ['required', 'in:account,company,goal,address'],
+            'tenant_id' => ['nullable', 'integer'],
+        ]);
+
+        return $this->forwardOnboardingPayload(
+            self::SAVE_STEP_ENDPOINT,
+            $request->except(['_token']),
+            'Falha ao salvar etapa do onboarding na central.',
+            [
+                'step' => $payload['step'],
+                'tenant_id' => $payload['tenant_id'] ?? null,
+            ]
+        );
+    }
+
+    public function finalize(Request $request): JsonResponse
+    {
+        $request->validate([
+            'tenant_id' => ['nullable', 'integer'],
+        ]);
+
+        return $this->forwardOnboardingPayload(
+            self::FINALIZE_ENDPOINT,
+            $request->except(['_token']),
+            'Falha ao finalizar onboarding na central.'
         );
     }
 
@@ -188,9 +221,9 @@ class OnboardingController extends Controller
      * Consulta endpoint da central e converte resposta para payload padrão.
      * Trata indisponibilidade com retorno seguro para o front-end.
      */
-    private function checkClientInCentral(array $payload, string $logMessage, array $logContext = []): JsonResponse
+    private function checkIdentityInCentral(array $payload, string $logMessage, array $logContext = []): JsonResponse
     {
-        $endpoint = $this->getFindClientEndpoint();
+        $endpoint = $this->getCheckIdentityEndpoint();
         $token = $this->getCoreBusinessToken();
 
         if ($token === '') {
@@ -202,17 +235,13 @@ class OnboardingController extends Controller
 
         try {
             $response = Http::withToken($token)
-                ->asForm()
                 ->acceptJson()
                 ->timeout(6)
                 ->post($endpoint, $payload);
 
             if ($response->successful()) {
-                return $this->makeCheckResponse(true, true);
-            }
-
-            if ($response->status() === 404) {
-                return $this->makeCheckResponse(false, true);
+                $responseData = $response->json();
+                return $this->makeCheckResponse((bool) ($responseData['is_completed'] ?? false), true);
             }
         } catch (\Throwable $exception) {
             Log::warning($logMessage, array_merge($logContext, [
@@ -223,14 +252,65 @@ class OnboardingController extends Controller
         return $this->makeCheckResponse(false, false);
     }
 
+    private function forwardOnboardingPayload(
+        string $endpointPath,
+        array $payload,
+        string $logMessage,
+        array $logContext = []
+    ): JsonResponse {
+        $endpoint = $this->buildCentralEndpoint($endpointPath);
+        $token = $this->getCoreBusinessToken();
+
+        if ($token === '') {
+            Log::warning($logMessage, array_merge($logContext, [
+                'error' => 'Token da central não configurado em CORE_BUSINESS_TOKEN.',
+            ]));
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Token da central não configurado.',
+            ], 500);
+        }
+
+        try {
+            $response = Http::withToken($token)
+                ->acceptJson()
+                ->timeout(6)
+                ->post($endpoint, $payload);
+
+            if ($response->successful()) {
+                return response()->json(array_merge(['success' => true], $response->json()));
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => (string) ($response->json('message') ?? 'Falha na integração com a central.'),
+            ], $response->status());
+        } catch (\Throwable $exception) {
+            Log::warning($logMessage, array_merge($logContext, [
+                'error' => $exception->getMessage(),
+            ]));
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Falha na integração com a central.',
+        ], 500);
+    }
+
     /**
      * Monta URL completa do endpoint de busca de cliente na central.
      * Usa configuração para facilitar troca de ambiente local/homologação.
      */
-    private function getFindClientEndpoint(): string
+    private function getCheckIdentityEndpoint(): string
+    {
+        return $this->buildCentralEndpoint(self::CHECK_IDENTITY_ENDPOINT);
+    }
+
+    private function buildCentralEndpoint(string $endpointPath): string
     {
         $baseUrl = rtrim((string) config('services.core_business.url'), '/');
-        return $baseUrl . self::FIND_CLIENT_ENDPOINT;
+        return $baseUrl . $endpointPath;
     }
 
     /**

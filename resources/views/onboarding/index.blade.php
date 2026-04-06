@@ -21,6 +21,7 @@
 
                     <form method="POST" action="{{ route('onboarding.submit') }}">
                         @csrf
+                        <input type="hidden" id="onboarding_tenant_id" name="tenant_id" value="{{ old('tenant_id', $data['tenant_id'] ?? '') }}">
 
                         <div class="onboarding-step" data-step="account">
                             @include('onboarding.steps.account')
@@ -83,6 +84,10 @@
             const stepOrder = ['account', 'company', 'goal', 'address'];
             const $form = $('form');
             const $sidePanel = $('#onboarding-side-panel');
+            const $tenantIdInput = $('#onboarding_tenant_id');
+            const csrfToken = $form.find('input[name="_token"]').val();
+            const saveStepUrl = '{{ route('onboarding.save-step') }}';
+            const finalizeUrl = '{{ route('onboarding.finalize') }}';
             const defaultBackgroundImage = '{{ asset('assets/media/bg-big.jpg') }}';
             const addressBackgroundImage = '{{ asset('assets/media/bg-finish.jpg') }}';
             let currentStep = 'account';
@@ -249,6 +254,102 @@
                 return window.validateAccountStep();
             }
 
+            /**
+             * Converte seleção booleana de checkbox para inteiro esperado no backend.
+             * Mantém payload consistente para campos opcionais de preferência.
+             */
+            function checkboxValue(selector) {
+                return $(selector).is(':checked') ? 1 : 0;
+            }
+
+            /**
+             * Coleta apenas os campos relevantes da etapa atual para persistência.
+             * Evita sobrescrever dados de outras etapas com valores vazios.
+             */
+            function collectStepPayload(stepName) {
+                const payload = {
+                    _token: csrfToken,
+                    step: stepName,
+                    tenant_id: ($tenantIdInput.val() || '').trim() || null,
+                };
+
+                if (stepName === 'account') {
+                    const fullName = ($('#full_name').val() || '').trim();
+                    payload.name = fullName;
+                    payload.company = fullName;
+                    payload.email = ($('#email').val() || '').trim();
+                    payload.whatsapp = ($('#phone').val() || '').trim();
+                    payload.cpf = ($('#cpf').val() || '').trim();
+                    payload.cnpj = ($('#cnpj').val() || '').trim();
+                    payload.document_type = ($('#document_type').val() || '').trim();
+                    payload.password = ($('#password').val() || '').trim();
+                    payload.has_coupon = checkboxValue('#has_coupon');
+                    payload.coupon_code = ($('#coupon_code').val() || '').trim();
+                    payload.tips_whatsapp = checkboxValue('#tips_whatsapp');
+                    payload.tips_email = checkboxValue('#tips_email');
+                    return payload;
+                }
+
+                if (stepName === 'company') {
+                    payload.company_profile = $('input[name="company_profile"]:checked').val() || '';
+                    return payload;
+                }
+
+                if (stepName === 'goal') {
+                    payload.main_goals = $('input[name="main_goals[]"]:checked')
+                        .map(function () {
+                            return $(this).val();
+                        })
+                        .get();
+                    return payload;
+                }
+
+                if (stepName === 'address') {
+                    payload.company_zip_code = ($('#company_zip_code').val() || '').trim();
+                    payload.company_city = ($('#company_city').val() || '').trim();
+                    payload.company_state = ($('#company_state').val() || '').trim();
+                    payload.company_city_state = ($('#company_city_state').val() || '').trim();
+                    payload.company_address = ($('#company_address').val() || '').trim();
+                    payload.company_neighborhood = ($('#company_neighborhood').val() || '').trim();
+                    payload.company_number = ($('#company_number').val() || '').trim();
+                    payload.company_complement = ($('#company_complement').val() || '').trim();
+                }
+
+                return payload;
+            }
+
+            /**
+             * Persiste etapa atual na central e atualiza tenant_id local.
+             * Mantém o fluxo de onboarding incremental sem recarregar a tela.
+             */
+            function persistStep(stepName) {
+                return $.ajax({
+                    url: saveStepUrl,
+                    method: 'POST',
+                    dataType: 'json',
+                    data: collectStepPayload(stepName),
+                }).done(function (response) {
+                    if (response.tenant_id) {
+                        $tenantIdInput.val(response.tenant_id);
+                    }
+                });
+            }
+
+            /**
+             * Finaliza onboarding na central e dispara provisionamento do tenant.
+             * Reaproveita payload da última etapa para garantir consistência final.
+             */
+            function finalizeStep(stepName) {
+                const payload = collectStepPayload(stepName);
+
+                return $.ajax({
+                    url: finalizeUrl,
+                    method: 'POST',
+                    dataType: 'json',
+                    data: payload,
+                });
+            }
+
             // Funcoes de renderizacao / UI
             /**
              * Retorna o step atualmente visivel no DOM.
@@ -307,13 +408,30 @@
 
                 event.preventDefault();
 
+                const $button = $(this);
                 const clickedStepName = $(this).closest('.onboarding-step').data('step') || getVisibleStepName();
                 const direction = $(this).val();
                 if (!canProceedFromCurrentStep(clickedStepName, direction)) {
                     return;
                 }
 
-                navigateSteps(clickedStepName, direction);
+                if (direction !== 'next') {
+                    navigateSteps(clickedStepName, direction);
+                    return;
+                }
+
+                $button.prop('disabled', true);
+                persistStep(clickedStepName)
+                    .done(function () {
+                        navigateSteps(clickedStepName, direction);
+                    })
+                    .fail(function (xhr) {
+                        const errorMessage = xhr.responseJSON?.message || 'Não foi possível salvar esta etapa agora.';
+                        alert(errorMessage);
+                    })
+                    .always(function () {
+                        $button.prop('disabled', false);
+                    });
             });
 
             /**
@@ -323,13 +441,28 @@
             $form.on('click', '#onboarding-finish-button', function (event) {
                 event.preventDefault();
 
-                const clickedStepName = $(this).closest('.onboarding-step').data('step') || getVisibleStepName();
+                const $button = $(this);
+                const clickedStepName = $button.closest('.onboarding-step').data('step') || getVisibleStepName();
                 const direction = $(this).val();
                 if (!canProceedFromCurrentStep(clickedStepName, direction)) {
                     return;
                 }
 
-                finalizeOnboardingFlow();
+                $button.prop('disabled', true);
+                persistStep(clickedStepName)
+                    .then(function () {
+                        return finalizeStep(clickedStepName);
+                    })
+                    .done(function () {
+                        finalizeOnboardingFlow();
+                    })
+                    .fail(function (xhr) {
+                        const errorMessage = xhr.responseJSON?.message || 'Não foi possível finalizar o onboarding agora.';
+                        alert(errorMessage);
+                    })
+                    .always(function () {
+                        $button.prop('disabled', false);
+                    });
             });
 
             /**
