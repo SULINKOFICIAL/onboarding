@@ -1,4 +1,17 @@
 <div class="mb-3">
+    <span class="badge badge-success">30 dias gratuitos</span>
+</div>
+<div class="d-flex gap-2 mb-3" aria-label="Progresso do onboarding">
+    @for ($bar = 1; $bar <= 3; $bar++)
+        <div class="flex-fill rounded-pill h-10px {{ ($currentStepIndex + 1) >= $bar ? 'bg-primary' : 'bg-gray-200' }}"></div>
+    @endfor
+</div>
+
+<h1 class="fs-2x fw-bolder mt-6 mb-10 me-md-13">
+    Experimente o mi.Core: organize seu atendimento e impulsione o crescimento da sua empresa.
+</h1>
+
+<div class="mb-3">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="full_name">Nome</label>
     <input class="form-control" id="full_name" name="full_name" value="{{ old('full_name', $data['full_name'] ?? '') }}" placeholder="Digite seu nome completo">
 </div>
@@ -42,6 +55,30 @@
 >
     Preencher teste
 </button>
+
+<div class="d-flex justify-content-between mt-4">
+    <span></span>
+    <button class="btn btn-primary w-100" type="submit" name="navigation" value="next">
+        Comecar a testar
+    </button>
+</div>
+
+<div class="mt-15">
+    <p class="form-label text-gray-700 fw-bolder mb-1">Receber dicas</p>
+    <div class="d-flex gap-4">
+        <div class="form-check">
+            <input class="form-check-input" id="tips_whatsapp" type="checkbox" name="tips_whatsapp" value="1" @checked(old('tips_whatsapp', $data['tips_whatsapp'] ?? false))>
+            <label class="form-check-label" for="tips_whatsapp">Receber por WhatsApp</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" id="tips_email" type="checkbox" name="tips_email" value="1" @checked(old('tips_email', $data['tips_email'] ?? false))>
+            <label class="form-check-label" for="tips_email">Receber por e-mail</label>
+        </div>
+    </div>
+    <p class="text-muted small mt-3 mb-0">
+        Este site e protegido por reCAPTCHA. A Politica de Privacidade e os Termos de Uso do Google se aplicam.
+    </p>
+</div>
 
 @section('custom-footer')
     <script>

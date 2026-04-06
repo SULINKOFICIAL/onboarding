@@ -1,3 +1,7 @@
+<h1 class="fs-2x fw-bolder mt-6 mb-10 me-md-13">
+    Finalize seu cadastro com o endereco da empresa e comece a testar.
+</h1>
+
 <div class="mb-3">
     <label class="form-label" for="company_zip_code">Qual o CEP da empresa?</label>
     <input
@@ -63,6 +67,11 @@
             placeholder="Apto, bloco, sala (opcional)"
         >
     </div>
+</div>
+
+<div class="d-flex justify-content-between mt-4 gap-3">
+    <button class="btn btn-outline-secondary" type="submit" name="navigation" value="back" formnovalidate>Voltar</button>
+    <button class="btn btn-primary w-100" type="submit" name="navigation" value="next">Finalizar</button>
 </div>
 
 <button

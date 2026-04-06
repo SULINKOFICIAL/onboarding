@@ -1,4 +1,17 @@
 <div class="mb-3">
+    <span class="badge badge-success">30 dias gratuitos</span>
+</div>
+<div class="d-flex gap-2 mb-3" aria-label="Progresso do onboarding">
+    @for ($bar = 1; $bar <= 3; $bar++)
+        <div class="flex-fill rounded-pill h-10px {{ ($currentStepIndex + 1) >= $bar ? 'bg-primary' : 'bg-gray-200' }}"></div>
+    @endfor
+</div>
+
+<h1 class="fs-2x fw-bolder mt-6 mb-10 me-md-13">
+    Conte pra gente o perfil da sua empresa para personalizarmos sua experiência.
+</h1>
+
+<div class="mb-3">
     <p class="form-label mb-2">Qual o perfil da empresa?</p>
 
     <div class="form-check mb-2">
@@ -17,6 +30,11 @@
         <input class="form-check-input" id="profile_mei" type="radio" name="company_profile" value="mei" @checked(old('company_profile', $data['company_profile'] ?? '') === 'mei')>
         <label class="form-check-label" for="profile_mei">MEI</label>
     </div>
+</div>
+
+<div class="d-flex justify-content-between mt-4 gap-3">
+    <button class="btn btn-outline-secondary" type="submit" name="navigation" value="back" formnovalidate>Voltar</button>
+    <button class="btn btn-primary w-100" type="submit" name="navigation" value="next">Continuar</button>
 </div>
 
 <button
