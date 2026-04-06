@@ -21,15 +21,16 @@
 </div>
 <div class="mb-3">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="phone">Numero</label>
-    <input class="form-control" id="phone" name="phone" value="{{ old('phone', $data['phone'] ?? '') }}" placeholder="(11) 99999-9999">
+    <input class="form-control input-phone" id="phone" name="phone" value="{{ old('phone', $data['phone'] ?? '') }}" placeholder="(11) 99999-9999">
 </div>
 <div class="mb-3 d-none" id="cpf-field">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="cpf">CPF</label>
     <input class="form-control input-cpf" id="cpf" name="cpf" value="{{ old('cpf', $data['cpf'] ?? ($data['cif'] ?? '')) }}" placeholder="000.000.000-00">
+    <div id="cpf-error" class="invalid-feedback d-none">Informe um CPF valido.</div>
 </div>
 <div class="mb-3" id="cnpj-field">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="cnpj">CNPJ</label>
-    <input class="form-control" id="cnpj" name="cnpj" value="{{ old('cnpj', $data['cnpj'] ?? '') }}" placeholder="00.000.000/0000-00">
+    <input class="form-control input-cnpj" id="cnpj" name="cnpj" value="{{ old('cnpj', $data['cnpj'] ?? '') }}" placeholder="00.000.000/0000-00">
 </div>
 <div class="form-check mb-3">
     <input class="form-check-input" id="no_cnpj" type="checkbox" name="no_cnpj" value="1" @checked(old('no_cnpj', $data['no_cnpj'] ?? false))>
@@ -66,118 +67,235 @@
 @push('step-scripts')
 <script>
     $(function () {
+        // Estado global
         const $noCnpjCheckbox = $('#no_cnpj');
         const $cnpjField = $('#cnpj-field');
         const $cpfField = $('#cpf-field');
         const $hasCouponCheckbox = $('#has_coupon');
         const $couponField = $('#coupon-field');
         const $fillTestDataButton = $('#fill-test-data-account');
-        const $phoneInput = $('#phone');
         const $cpfInput = $('#cpf');
-        const $cnpjInput = $('#cnpj');
+        const $cpfError = $('#cpf-error');
 
+        // Helpers / utilitarios
+        /**
+         * Remove caracteres nao numericos de um valor digitado no formulario.
+         * Centraliza conversao para validacoes e comparacoes numericas.
+         */
         function getDigits(value) {
             return (value || '').replace(/\D/g, '');
         }
 
-        function formatPhone(value) {
-            const digits = getDigits(value).slice(0, 11);
-            if (digits.length <= 2) {
-                return digits;
+        /**
+         * Valida os digitos verificadores de um CPF informado pelo usuario.
+         * Evita aceitar combinacoes invalidas ou sequenciais repetidas.
+         */
+        function isValidCpf(value) {
+            const cpfDigits = getDigits(value);
+            if (cpfDigits.length !== 11 || /^(\d)\1{10}$/.test(cpfDigits)) {
+                return false;
             }
 
-            if (digits.length <= 10) {
-                return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}${digits.length > 6 ? `-${digits.slice(6)}` : ''}`;
+            let firstDigitSum = 0;
+            for (let index = 0; index < 9; index += 1) {
+                firstDigitSum += Number(cpfDigits.charAt(index)) * (10 - index);
             }
 
-            return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+            let firstDigit = (firstDigitSum * 10) % 11;
+            if (firstDigit === 10) {
+                firstDigit = 0;
+            }
+
+            if (firstDigit !== Number(cpfDigits.charAt(9))) {
+                return false;
+            }
+
+            let secondDigitSum = 0;
+            for (let index = 0; index < 10; index += 1) {
+                secondDigitSum += Number(cpfDigits.charAt(index)) * (11 - index);
+            }
+
+            let secondDigit = (secondDigitSum * 10) % 11;
+            if (secondDigit === 10) {
+                secondDigit = 0;
+            }
+
+            return secondDigit === Number(cpfDigits.charAt(10));
         }
 
-        function formatCpf(value) {
-            const digits = getDigits(value).slice(0, 11);
-            if (digits.length <= 3) {
-                return digits;
-            }
-
-            if (digits.length <= 6) {
-                return `${digits.slice(0, 3)}.${digits.slice(3)}`;
-            }
-
-            if (digits.length <= 9) {
-                return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
-            }
-
-            return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+        // Funcoes de renderizacao / UI
+        /**
+         * Exibe mensagem de erro para o campo CPF quando a validacao falha.
+         * Mantem o feedback visual padronizado com classes do Bootstrap.
+         */
+        function showCpfError() {
+            $cpfInput.addClass('is-invalid');
+            $cpfError.removeClass('d-none');
         }
 
-        function formatCnpj(value) {
-            const digits = getDigits(value).slice(0, 14);
-            if (digits.length <= 2) {
-                return digits;
-            }
-
-            if (digits.length <= 5) {
-                return `${digits.slice(0, 2)}.${digits.slice(2)}`;
-            }
-
-            if (digits.length <= 8) {
-                return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
-            }
-
-            if (digits.length <= 12) {
-                return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
-            }
-
-            return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+        /**
+         * Remove o estado de erro do CPF para evitar mensagens persistentes.
+         * E usada quando o usuario corrige o valor ou muda de contexto.
+         */
+        function hideCpfError() {
+            $cpfInput.removeClass('is-invalid');
+            $cpfError.addClass('d-none');
         }
 
+        /**
+         * Alterna entre campos de CNPJ e CPF conforme opcao do usuario.
+         * Mantem o erro de CPF oculto quando o documento nao e necessario.
+         */
         function toggleDocumentFields() {
             const withoutCnpj = $noCnpjCheckbox.is(':checked');
             $cnpjField.toggleClass('d-none', withoutCnpj);
             $cpfField.toggleClass('d-none', !withoutCnpj);
+            if (!withoutCnpj) {
+                hideCpfError();
+            }
         }
 
+        /**
+         * Exibe ou oculta o campo de cupom com base na selecao atual.
+         * Evita mostrar campo opcional quando a opcao nao foi marcada.
+         */
         function toggleCouponField() {
             $couponField.toggleClass('d-none', !$hasCouponCheckbox.is(':checked'));
         }
 
+        /**
+         * Preenche dados de exemplo para acelerar testes do step account.
+         * Reaplica mascaras ao final para refletir o formato visual esperado.
+         */
         function fillTestDataStep() {
             $('#full_name').val('Usuario Teste');
             $('#email').val('teste+onboarding@micore.com');
-            $('#phone').val('(11) 99999-9999');
+            $('#phone').val('11999999999');
             $('#no_cnpj').prop('checked', false).trigger('change');
-            $('#cnpj').val('12.345.678/0001-99');
+            $('#cnpj').val('12345678000199');
             $('#password').val('Senha@12345');
             $('#has_coupon').prop('checked', true).trigger('change');
             $('#coupon_code').val('BEMVINDO10');
             $('#tips_whatsapp').prop('checked', true);
             $('#tips_email').prop('checked', true);
+
+            if (typeof generateMasks === 'function') {
+                generateMasks();
+            }
         }
 
-        function maskPhoneInput() {
-            $phoneInput.val(formatPhone($phoneInput.val()));
+        /**
+         * Valida CPF considerando estado do checkbox e modo forcar validacao.
+         * Retorna true quando nao houver erro bloqueante para o step.
+         */
+        function validateCpfField(forceValidation = false) {
+            if (!$noCnpjCheckbox.is(':checked')) {
+                hideCpfError();
+                return true;
+            }
+
+            const cpfDigits = getDigits($cpfInput.val());
+            if (!cpfDigits.length) {
+                if (forceValidation) {
+                    showCpfError();
+                    return false;
+                }
+
+                hideCpfError();
+                return true;
+            }
+
+            if (isValidCpf($cpfInput.val())) {
+                hideCpfError();
+                return true;
+            }
+
+            showCpfError();
+            return false;
         }
 
-        function maskCpfInput() {
-            $cpfInput.val(formatCpf($cpfInput.val()));
+        /**
+         * Executa validacoes do step account antes de avancar no wizard.
+         * Garante foco no campo CPF quando houver erro de preenchimento.
+         */
+        function validateAccountStep() {
+            const isCpfValid = validateCpfField(true);
+            if (!isCpfValid) {
+                $cpfInput.trigger('focus');
+            }
+
+            return isCpfValid;
         }
 
-        function maskCnpjInput() {
-            $cnpjInput.val(formatCnpj($cnpjInput.val()));
-        }
-
+        // Event listeners
+        /**
+         * Escuta mudanca no checkbox de CNPJ para atualizar os campos visiveis
+         * e manter a interface coerente com o tipo de documento escolhido.
+         */
         $noCnpjCheckbox.on('change', toggleDocumentFields);
+
+        /**
+         * Escuta mudanca na opcao de cupom e controla a exibicao do campo.
+         * Evita estados inconsistentes entre checkbox e input de codigo.
+         */
         $hasCouponCheckbox.on('change', toggleCouponField);
+
+        /**
+         * Escuta clique no botao de preenchimento para inserir dados de teste
+         * e facilitar validacoes manuais durante o desenvolvimento.
+         */
         $fillTestDataButton.on('click', fillTestDataStep);
-        $phoneInput.on('input', maskPhoneInput);
-        $cpfInput.on('input', maskCpfInput);
-        $cnpjInput.on('input', maskCnpjInput);
+
+        /**
+         * Escuta digitacao no CPF para validar apenas quando houver 11 digitos
+         * e evitar feedback de erro prematuro durante o preenchimento.
+         */
+        $cpfInput.on('input', function () {
+            if (!$noCnpjCheckbox.is(':checked')) {
+                hideCpfError();
+                return;
+            }
+
+            if (getDigits($cpfInput.val()).length === 11) {
+                validateCpfField();
+                return;
+            }
+
+            hideCpfError();
+        });
+
+        /**
+         * Escuta saida do campo CPF para validar valor completo digitado
+         * e manter a regra de erro apenas quando o documento estiver finalizado.
+         */
+        $cpfInput.on('blur', function () {
+            if (!$noCnpjCheckbox.is(':checked')) {
+                hideCpfError();
+                return;
+            }
+
+            if (getDigits($cpfInput.val()).length === 11) {
+                validateCpfField(true);
+                return;
+            }
+
+            hideCpfError();
+        });
+
+        /**
+         * Escuta mudanca no checkbox de CNPJ para limpar erro residual do CPF
+         * quando o usuario alterna rapidamente entre os tipos de documento.
+         */
+        $noCnpjCheckbox.on('change', hideCpfError);
+
+        if (typeof generateMasks === 'function') {
+            generateMasks();
+        }
+
+        window.validateAccountStep = validateAccountStep;
 
         toggleDocumentFields();
         toggleCouponField();
-        maskPhoneInput();
-        maskCpfInput();
-        maskCnpjInput();
     });
 </script>
 @endpush

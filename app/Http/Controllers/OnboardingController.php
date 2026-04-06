@@ -17,18 +17,9 @@ class OnboardingController extends Controller
 
     public function show(Request $request): View
     {
-        $currentStep = $this->normalizeStep($request->session()->get('onboarding.current_step'));
-        $request->session()->put('onboarding.current_step', $currentStep);
-
-        $currentStepIndex = $this->getStepIndex($currentStep);
-        $previousStep = $this->getPreviousStep($currentStep);
         $data = $request->session()->get('onboarding.form', []);
 
         return view('onboarding.index', [
-            'currentStep' => $currentStep,
-            'currentStepIndex' => $currentStepIndex,
-            'previousStep' => $previousStep,
-            'stepLabels' => self::STEPS,
             'data' => $data,
         ]);
     }

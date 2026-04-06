@@ -77,20 +77,53 @@
 @push('step-scripts')
 <script>
     $(function () {
+        // Estado global
+        const $goalOptions = $('input[name="main_goal"]');
+        const $goalCards = $('.btn-success-mc');
+        const $fillTestDataGoalButton = $('#fill-test-data-goal');
+
+        // Helpers / utilitarios
+        /**
+         * Remove classe active de todos os cards de objetivo principal.
+         * Evita manter mais de uma opcao destacada na interface.
+         */
+        function clearGoalActiveState() {
+            $goalCards.removeClass('active');
+        }
+
+        // Funcoes de renderizacao / UI
+        /**
+         * Sincroniza destaque visual dos cards com o radio selecionado.
+         * Preserva estado correto ao retornar para este step.
+         */
         function syncGoalActiveState() {
-            $('.btn-success-mc').removeClass('active');
-            $('input[name="main_goal"]:checked').each(function () {
+            clearGoalActiveState();
+            $goalOptions.filter(':checked').each(function () {
                 $(`label[for="${this.id}"]`).addClass('active');
             });
         }
 
-        $('input[name="main_goal"]').on('change', syncGoalActiveState);
-        $('.btn-success-mc').on('click', function () {
-            $('.btn-success-mc').removeClass('active');
+        // Event listeners
+        /**
+         * Escuta alteracao dos radios de objetivo para atualizar o card ativo
+         * e manter consistencia entre input real e estado visual.
+         */
+        $goalOptions.on('change', syncGoalActiveState);
+
+        /**
+         * Escuta clique no card visual para reforcar destaque imediato
+         * mesmo antes da propagacao completa do estado do radio.
+         */
+        $goalCards.on('click', function () {
+            clearGoalActiveState();
             $(this).addClass('active');
         });
 
-        $('#fill-test-data-goal').on('click', function () {
+        /**
+         * Escuta clique no botao de preenchimento para marcar objetivo padrao
+         * e acelerar testes de navegacao no fluxo de onboarding.
+         */
+        $fillTestDataGoalButton.on('click', function () {
             $('input[name="main_goal"][value="vender_online"]').prop('checked', true).trigger('change');
         });
 

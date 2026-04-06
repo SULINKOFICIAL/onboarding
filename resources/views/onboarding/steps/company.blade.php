@@ -71,20 +71,53 @@
 @push('step-scripts')
 <script>
     $(function () {
+        // Estado global
+        const $companyProfileOptions = $('input[name="company_profile"]');
+        const $companyProfileCards = $('.btn-success-mc');
+        const $fillTestDataCompanyButton = $('#fill-test-data-company');
+
+        // Helpers / utilitarios
+        /**
+         * Remove classe active de todos os cards de perfil da empresa.
+         * Centraliza a limpeza antes de aplicar o estado selecionado.
+         */
+        function clearCompanyProfileActiveState() {
+            $companyProfileCards.removeClass('active');
+        }
+
+        // Funcoes de renderizacao / UI
+        /**
+         * Sincroniza o estado visual dos cards com o radio atualmente marcado.
+         * Garante interface consistente ao carregar dados antigos do formulario.
+         */
         function syncCompanyProfileActiveState() {
-            $('.btn-success-mc').removeClass('active');
-            $('input[name="company_profile"]:checked').each(function () {
+            clearCompanyProfileActiveState();
+            $companyProfileOptions.filter(':checked').each(function () {
                 $(`label[for="${this.id}"]`).addClass('active');
             });
         }
 
-        $('input[name="company_profile"]').on('change', syncCompanyProfileActiveState);
-        $('.btn-success-mc').on('click', function () {
-            $('.btn-success-mc').removeClass('active');
+        // Event listeners
+        /**
+         * Escuta alteracao do radio de perfil e atualiza o estado ativo
+         * para refletir imediatamente a opcao escolhida pelo usuario.
+         */
+        $companyProfileOptions.on('change', syncCompanyProfileActiveState);
+
+        /**
+         * Escuta clique no card visual para reforcar o estado selecionado
+         * e evitar cards ativos simultaneos durante a interacao.
+         */
+        $companyProfileCards.on('click', function () {
+            clearCompanyProfileActiveState();
             $(this).addClass('active');
         });
 
-        $('#fill-test-data-company').on('click', function () {
+        /**
+         * Escuta clique no botao de preenchimento e aplica perfil padrao.
+         * Facilita testes rapidos sem interferir na logica principal.
+         */
+        $fillTestDataCompanyButton.on('click', function () {
             $('input[name="company_profile"][value="simples_nacional"]').prop('checked', true).trigger('change');
         });
 

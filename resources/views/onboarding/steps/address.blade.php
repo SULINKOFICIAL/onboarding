@@ -85,16 +85,27 @@
 @push('step-scripts')
 <script>
     $(function () {
+        // Estado global
         const $companyZipCodeInput = $('#company_zip_code');
         const $zipAddressFields = $('#zip-address-fields');
         const $companyCityStateInput = $('#company_city_state');
         const $companyAddressInput = $('#company_address');
         const $companyNeighborhoodInput = $('#company_neighborhood');
+        const $fillTestDataAddressButton = $('#fill-test-data-address');
 
+        // Helpers / utilitarios
+        /**
+         * Extrai apenas numeros do CEP e limita ao total de 8 digitos.
+         * Padroniza entrada para mascara e consulta do ViaCEP.
+         */
         function getZipCodeDigits(value) {
             return value.replace(/\D/g, '').slice(0, 8);
         }
 
+        /**
+         * Formata o CEP no padrao brasileiro 00000-000 durante digitacao.
+         * Melhora legibilidade sem alterar o valor numerico base.
+         */
         function formatZipCode(value) {
             const zipCodeDigits = getZipCodeDigits(value);
             if (zipCodeDigits.length <= 5) {
@@ -104,16 +115,29 @@
             return `${zipCodeDigits.slice(0, 5)}-${zipCodeDigits.slice(5)}`;
         }
 
+        // Funcoes de renderizacao / UI
+        /**
+         * Exibe os campos complementares de endereco apos CEP valido.
+         * Mantem a interface enxuta ate haver dados suficientes.
+         */
         function showZipAddressFields() {
             $zipAddressFields.removeClass('d-none');
         }
 
+        /**
+         * Aplica dados retornados pelo ViaCEP nos campos de endereco.
+         * Usa fallback para strings vazias em respostas parciais.
+         */
         function applyZipCodePayload(payload) {
             $companyCityStateInput.val(`${payload.localidade || ''} - ${payload.uf || ''}`.trim());
             $companyAddressInput.val(payload.logradouro || '');
             $companyNeighborhoodInput.val(payload.bairro || '');
         }
 
+        /**
+         * Consulta endereco no ViaCEP e aplica retorno quando o CEP existir.
+         * Ignora resposta de erro para nao sobrescrever dados manuais.
+         */
         function lookupZipCode(zipCodeDigits) {
             return $.getJSON(`https://viacep.com.br/ws/${zipCodeDigits}/json/`)
                 .done(function (payload) {
@@ -125,6 +149,11 @@
                 });
         }
 
+        // Event listeners
+        /**
+         * Escuta digitacao no campo de CEP, aplica mascara progressiva
+         * e libera campos de endereco ao atingir quantidade minima de digitos.
+         */
         $companyZipCodeInput.on('input', function () {
             const formattedZipCode = formatZipCode($companyZipCodeInput.val() || '');
             $companyZipCodeInput.val(formattedZipCode);
@@ -133,6 +162,10 @@
             }
         });
 
+        /**
+         * Escuta blur do CEP para consultar ViaCEP quando o valor estiver completo
+         * e preencher automaticamente cidade, endereco e bairro.
+         */
         $companyZipCodeInput.on('blur', function () {
             const zipCodeDigits = getZipCodeDigits($companyZipCodeInput.val() || '');
             if (zipCodeDigits.length !== 8) {
@@ -143,7 +176,11 @@
             lookupZipCode(zipCodeDigits);
         });
 
-        $('#fill-test-data-address').on('click', function () {
+        /**
+         * Escuta clique no botao de preenchimento para inserir dados de teste
+         * e agilizar validacoes visuais deste step.
+         */
+        $fillTestDataAddressButton.on('click', function () {
             $companyZipCodeInput.val('01310-100');
             showZipAddressFields();
             $companyCityStateInput.val('Sao Paulo - SP');

@@ -59,22 +59,15 @@
 @push('step-scripts')
     <script>
         $(function () {
+            // Estado global
             const stepOrder = ['account', 'company', 'goal', 'address'];
             const $form = $('form');
             let currentStep = 'account';
 
+            // Helpers / utilitarios
             /**
-             * Exibe apenas o step informado e oculta os demais no mesmo formulário.
-             * Mantém todos os steps carregados, alterando apenas o display.
-             */
-            function showStep(stepName) {
-                $('.onboarding-step').hide();
-                $(`.onboarding-step[data-step="${stepName}"]`).show();
-            }
-
-            /**
-             * Retorna o nome do próximo step a partir da ordem atual do wizard.
-             * Mantém a navegação determinística no front-end.
+             * Retorna o nome do step adjacente conforme a direcao de navegacao.
+             * Mantem a ordem do fluxo centralizada em uma unica lista.
              */
             function getAdjacentStep(stepName, direction) {
                 const currentIndex = stepOrder.indexOf(stepName);
@@ -91,26 +84,66 @@
             }
 
             /**
-             * Captura cliques dos botões de navegação e troca o step no front.
-             * Evita submit tradicional e elimina recarregamento da página.
+             * Executa validacoes do step atual antes de permitir a navegacao.
+             * Evita avancar para o proximo step quando ha erro local.
              */
-            $form.on('click', 'button[name="navigation"]', function (event) {
-                event.preventDefault();
+            function canProceedFromCurrentStep(direction) {
+                if (direction !== 'next' || currentStep !== 'account') {
+                    return true;
+                }
 
-                const direction = $(this).val();
+                // Mantem compatibilidade com validacao isolada no step account.
+                if (typeof window.validateAccountStep !== 'function') {
+                    return true;
+                }
+
+                return window.validateAccountStep();
+            }
+
+            // Funcoes de renderizacao / UI
+            /**
+             * Exibe apenas o step informado e oculta os demais no formulario.
+             * Garante que todos os steps permanecam montados no DOM.
+             */
+            function showStep(stepName) {
+                $('.onboarding-step').hide();
+                $(`.onboarding-step[data-step="${stepName}"]`).show();
+            }
+
+            /**
+             * Move o fluxo para o step alvo considerando regras de navegacao.
+             * Reinicia no primeiro step ao finalizar o ultimo.
+             */
+            function navigateSteps(direction) {
                 if (direction === 'next' && currentStep === 'address') {
                     currentStep = 'account';
-                    showStep('account');
+                    showStep(currentStep);
                     return;
                 }
 
                 currentStep = getAdjacentStep(currentStep, direction);
                 showStep(currentStep);
+            }
+
+            // Event listeners
+            /**
+             * Escuta cliques nos botoes de navegacao, valida o step atual
+             * e executa a transicao de tela sem recarregar a pagina.
+             */
+            $form.on('click', 'button[name="navigation"]', function (event) {
+                event.preventDefault();
+
+                const direction = $(this).val();
+                if (!canProceedFromCurrentStep(direction)) {
+                    return;
+                }
+
+                navigateSteps(direction);
             });
 
             /**
-             * Bloqueia submit padrão para manter o fluxo 100% client-side.
-             * Garante que navegação ocorra apenas via jQuery.
+             * Escuta o submit do formulario para impedir envio imediato
+             * e manter o fluxo atual totalmente controlado no front-end.
              */
             $form.on('submit', function (event) {
                 event.preventDefault();
