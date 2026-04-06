@@ -98,7 +98,8 @@ class OnboardingController extends Controller
         return $this->checkIdentityInCentral(
             ['email' => $payload['email']],
             'Falha ao consultar email na central durante onboarding.',
-            ['email' => $payload['email']]
+            ['email' => $payload['email']],
+            true
         );
     }
 
@@ -117,12 +118,16 @@ class OnboardingController extends Controller
         $documentValue = preg_replace('/\D+/', '', $payload['value']);
 
         return $this->checkIdentityInCentral(
-            [$documentType => $documentValue],
+            [
+                'document_type' => $documentType,
+                $documentType => $documentValue,
+            ],
             'Falha ao consultar documento na central durante onboarding.',
             [
                 'document_type' => $documentType,
                 'document_value' => $documentValue,
-            ]
+            ],
+            false
         );
     }
 
@@ -130,7 +135,6 @@ class OnboardingController extends Controller
     {
         $payload = $request->validate([
             'step' => ['required', 'in:account,company,goal,address'],
-            'tenant_id' => ['nullable', 'integer'],
         ]);
 
         return $this->forwardOnboardingPayload(
@@ -139,17 +143,12 @@ class OnboardingController extends Controller
             'Falha ao salvar etapa do onboarding na central.',
             [
                 'step' => $payload['step'],
-                'tenant_id' => $payload['tenant_id'] ?? null,
             ]
         );
     }
 
     public function finalize(Request $request): JsonResponse
     {
-        $request->validate([
-            'tenant_id' => ['nullable', 'integer'],
-        ]);
-
         return $this->forwardOnboardingPayload(
             self::FINALIZE_ENDPOINT,
             $request->except(['_token']),
@@ -221,7 +220,12 @@ class OnboardingController extends Controller
      * Consulta endpoint da central e converte resposta para payload padrão.
      * Trata indisponibilidade com retorno seguro para o front-end.
      */
-    private function checkIdentityInCentral(array $payload, string $logMessage, array $logContext = []): JsonResponse
+    private function checkIdentityInCentral(
+        array $payload,
+        string $logMessage,
+        array $logContext = [],
+        bool $useExistsField = false
+    ): JsonResponse
     {
         $endpoint = $this->getCheckIdentityEndpoint();
         $token = $this->getCoreBusinessToken();
@@ -241,7 +245,11 @@ class OnboardingController extends Controller
 
             if ($response->successful()) {
                 $responseData = $response->json();
-                return $this->makeCheckResponse((bool) ($responseData['is_completed'] ?? false), true);
+                $exists = $useExistsField
+                    ? (bool) ($responseData['exists'] ?? false)
+                    : (bool) ($responseData['is_completed'] ?? false);
+
+                return $this->makeCheckResponse($exists, true);
             }
         } catch (\Throwable $exception) {
             Log::warning($logMessage, array_merge($logContext, [

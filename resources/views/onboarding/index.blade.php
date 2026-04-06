@@ -21,7 +21,6 @@
 
                     <form method="POST" action="{{ route('onboarding.submit') }}">
                         @csrf
-                        <input type="hidden" id="onboarding_tenant_id" name="tenant_id" value="{{ old('tenant_id', $data['tenant_id'] ?? '') }}">
 
                         <div class="onboarding-step" data-step="account">
                             @include('onboarding.steps.account')
@@ -84,7 +83,6 @@
             const stepOrder = ['account', 'company', 'goal', 'address'];
             const $form = $('form');
             const $sidePanel = $('#onboarding-side-panel');
-            const $tenantIdInput = $('#onboarding_tenant_id');
             const csrfToken = $form.find('input[name="_token"]').val();
             const saveStepUrl = '{{ route('onboarding.save-step') }}';
             const finalizeUrl = '{{ route('onboarding.finalize') }}';
@@ -270,18 +268,19 @@
                 const payload = {
                     _token: csrfToken,
                     step: stepName,
-                    tenant_id: ($tenantIdInput.val() || '').trim() || null,
                 };
+
+                // Identidade sempre vai em todas as etapas para resolução no backend.
+                payload.email = ($('#email').val() || '').trim();
+                payload.cpf = ($('#cpf').val() || '').trim();
+                payload.cnpj = ($('#cnpj').val() || '').trim();
+                payload.document_type = ($('#document_type').val() || '').trim();
 
                 if (stepName === 'account') {
                     const fullName = ($('#full_name').val() || '').trim();
                     payload.name = fullName;
                     payload.company = fullName;
-                    payload.email = ($('#email').val() || '').trim();
                     payload.whatsapp = ($('#phone').val() || '').trim();
-                    payload.cpf = ($('#cpf').val() || '').trim();
-                    payload.cnpj = ($('#cnpj').val() || '').trim();
-                    payload.document_type = ($('#document_type').val() || '').trim();
                     payload.password = ($('#password').val() || '').trim();
                     payload.has_coupon = checkboxValue('#has_coupon');
                     payload.coupon_code = ($('#coupon_code').val() || '').trim();
@@ -319,7 +318,7 @@
             }
 
             /**
-             * Persiste etapa atual na central e atualiza tenant_id local.
+             * Persiste etapa atual na central resolvendo o tenant por identidade.
              * Mantém o fluxo de onboarding incremental sem recarregar a tela.
              */
             function persistStep(stepName) {
@@ -328,10 +327,6 @@
                     method: 'POST',
                     dataType: 'json',
                     data: collectStepPayload(stepName),
-                }).done(function (response) {
-                    if (response.tenant_id) {
-                        $tenantIdInput.val(response.tenant_id);
-                    }
                 });
             }
 
