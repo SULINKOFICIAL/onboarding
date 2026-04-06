@@ -81,7 +81,7 @@
 </div>
 
 <div class="d-flex justify-content-between mt-4 gap-3">
-    <button class="btn btn-light" type="submit" name="navigation" value="back" formnovalidate>Voltar</button>
+    {{-- <button class="btn btn-light" type="submit" name="navigation" value="back" formnovalidate>Voltar</button> --}}
     <button id="onboarding-finish-button" class="btn btn-primary w-100" type="submit" name="navigation" value="next" disabled>Finalizar</button>
 </div>
 

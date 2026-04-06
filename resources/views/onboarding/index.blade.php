@@ -6,7 +6,14 @@
     <div class="container-fluid">
         <div class="row min-vh-100">
             <div class="col-12 col-lg-6 bg-white d-flex align-items-center z-index-3" style="box-shadow: 20px 0px 100px #10161f97;">
-                <div class="w-100 px-4 px-md-5 py-4 mx-auto" style="max-width: 640px;">
+                <div class="w-100 px-4 px-md-5 py-4 mx-auto mw-650px">
+                    <div class="mb-8 text-center text-md-start">
+                        <img
+                            src="{{ asset('assets/media/logo_micore.webp') }}"
+                            class="h-30px mb-8"
+                        >
+                    </div>
+
                     @if ($errors->any())
                         <div class="alert alert-danger">
                             @foreach ($errors->all() as $error)
