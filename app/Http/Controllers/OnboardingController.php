@@ -12,7 +12,7 @@ use Illuminate\View\View;
 class OnboardingController extends Controller
 {
     private const DEFAULT_STEP = 'account';
-    private const FIND_CLIENT_ENDPOINT = '/api/micore/encontrar-cliente';
+    private const FIND_CLIENT_ENDPOINT = '/api/central/encontrar-cliente';
 
     private const STEPS = [
         'account' => 'Account',
@@ -191,9 +191,18 @@ class OnboardingController extends Controller
     private function checkClientInCentral(array $payload, string $logMessage, array $logContext = []): JsonResponse
     {
         $endpoint = $this->getFindClientEndpoint();
+        $token = $this->getCoreBusinessToken();
+
+        if ($token === '') {
+            Log::warning($logMessage, array_merge($logContext, [
+                'error' => 'Token da central não configurado em CORE_BUSINESS_TOKEN.',
+            ]));
+            return $this->makeCheckResponse(false, false);
+        }
 
         try {
-            $response = Http::asForm()
+            $response = Http::withToken($token)
+                ->asForm()
                 ->acceptJson()
                 ->timeout(6)
                 ->post($endpoint, $payload);
@@ -222,6 +231,15 @@ class OnboardingController extends Controller
     {
         $baseUrl = rtrim((string) config('services.core_business.url'), '/');
         return $baseUrl . self::FIND_CLIENT_ENDPOINT;
+    }
+
+    /**
+     * Obtém token da integração entre onboarding e central.
+     * Mantém leitura centralizada da configuração de autenticação.
+     */
+    private function getCoreBusinessToken(): string
+    {
+        return (string) config('services.core_business.token', '');
     }
 
     /**
