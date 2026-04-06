@@ -62,7 +62,9 @@
             // Estado global
             const stepOrder = ['account', 'company', 'goal', 'address'];
             const $form = $('form');
+            const $finalizingMessage = $('#onboarding-finalizing-message');
             let currentStep = 'account';
+            let isFinishing = false;
 
             // Helpers / utilitarios
             /**
@@ -108,6 +110,17 @@
             function showStep(stepName) {
                 $('.onboarding-step').hide();
                 $(`.onboarding-step[data-step="${stepName}"]`).show();
+                if (stepName !== 'address') {
+                    $finalizingMessage.stop(true, true).hide();
+                }
+            }
+
+            /**
+             * Exibe mensagem final com animacao para indicar encaminhamento.
+             * Reforca feedback ao usuario antes do encerramento do fluxo.
+             */
+            function showFinalizingMessage() {
+                $finalizingMessage.stop(true, true).fadeIn(300);
             }
 
             /**
@@ -116,8 +129,16 @@
              */
             function navigateSteps(direction) {
                 if (direction === 'next' && currentStep === 'address') {
-                    currentStep = 'account';
-                    showStep(currentStep);
+                    isFinishing = true;
+                    showFinalizingMessage();
+
+                    // Aguarda o feedback visual antes de reiniciar o fluxo.
+                    setTimeout(function () {
+                        currentStep = 'account';
+                        showStep(currentStep);
+                        isFinishing = false;
+                    }, 1600);
+
                     return;
                 }
 
@@ -132,6 +153,10 @@
              */
             $form.on('click', 'button[name="navigation"]', function (event) {
                 event.preventDefault();
+
+                if (isFinishing) {
+                    return;
+                }
 
                 const direction = $(this).val();
                 if (!canProceedFromCurrentStep(direction)) {

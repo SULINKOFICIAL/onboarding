@@ -4,14 +4,19 @@
 
 <div class="mb-3">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="company_zip_code">Qual o CEP da empresa?</label>
-    <input
-        class="form-control"
-        id="company_zip_code"
-        name="company_zip_code"
-        value="{{ old('company_zip_code', $data['company_zip_code'] ?? '') }}"
-        maxlength="9"
-        placeholder="00000-000"
-    >
+    <div class="position-relative">
+        <input
+            class="form-control pe-13"
+            id="company_zip_code"
+            name="company_zip_code"
+            value="{{ old('company_zip_code', $data['company_zip_code'] ?? '') }}"
+            maxlength="9"
+            placeholder="00000-000"
+        >
+        <div id="zip-code-loading" class="position-absolute top-50 translate-middle-y end-0 me-4 d-none">
+            <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
+        </div>
+    </div>
 </div>
 
 <div id="zip-address-fields" class="{{ old('company_zip_code', $data['company_zip_code'] ?? '') ? '' : 'd-none' }}">
@@ -73,6 +78,15 @@
     <button class="btn btn-light" type="submit" name="navigation" value="back" formnovalidate>Voltar</button>
     <button class="btn btn-primary w-100" type="submit" name="navigation" value="next">Finalizar</button>
 </div>
+<div
+    id="onboarding-finalizing-message"
+    class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center text-center px-5"
+    style="display: none; z-index: 2000; background-color: rgba(255, 255, 255, 0.96);"
+>
+    <h1 class="fw-bolder mb-0 text-gray-900">
+        Estamos finalizando seu cadastro, vamos te encaminhando para o seu sistema.
+    </h1>
+</div>
 
 <button
     id="fill-test-data-address"
@@ -87,6 +101,7 @@
     $(function () {
         // Estado global
         const $companyZipCodeInput = $('#company_zip_code');
+        const $zipCodeLoading = $('#zip-code-loading');
         const $zipAddressFields = $('#zip-address-fields');
         const $companyCityStateInput = $('#company_city_state');
         const $companyAddressInput = $('#company_address');
@@ -139,6 +154,8 @@
          * Ignora resposta de erro para nao sobrescrever dados manuais.
          */
         function lookupZipCode(zipCodeDigits) {
+            setZipLookupLoadingState(true);
+
             return $.getJSON(`https://viacep.com.br/ws/${zipCodeDigits}/json/`)
                 .done(function (payload) {
                     if (payload.erro) {
@@ -146,7 +163,19 @@
                     }
 
                     applyZipCodePayload(payload);
+                })
+                .always(function () {
+                    setZipLookupLoadingState(false);
                 });
+        }
+
+        /**
+         * Controla estado visual de carregamento da consulta de CEP.
+         * Evita duplo submit durante requisicoes em andamento.
+         */
+        function setZipLookupLoadingState(isLoading) {
+            $zipCodeLoading.toggleClass('d-none', !isLoading);
+            $companyZipCodeInput.prop('readonly', isLoading);
         }
 
         // Event listeners
