@@ -1,6 +1,6 @@
 @extends('app')
 
-@section('title', 'Onboarding')
+@section('title', 'Criando seu sistema')
 
 @section('content')
     <div class="container-fluid">
