@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'core_business' => [
+        'url' => env('CORE_BUSINESS_URL', 'http://127.0.0.1:8001'),
+    ],
+
 ];

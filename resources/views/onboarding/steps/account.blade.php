@@ -14,10 +14,14 @@
 <div class="mb-3">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="full_name">Nome</label>
     <input class="form-control" id="full_name" name="full_name" value="{{ old('full_name', $data['full_name'] ?? '') }}" placeholder="Digite seu nome completo" required>
+    <div id="full-name-error" class="invalid-feedback d-none">Informe nome e sobrenome.</div>
 </div>
 <div class="mb-3">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="email">E-mail</label>
     <input class="form-control" id="email" type="email" name="email" value="{{ old('email', $data['email'] ?? '') }}" placeholder="voce@empresa.com" required>
+    <div id="email-error" class="invalid-feedback d-none">
+        Já existe uma conta associada com esse email no mi.Core. Utilize outro email para continuar
+    </div>
 </div>
 <div class="mb-3">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="phone">Numero</label>
@@ -27,10 +31,12 @@
     <label class="form-label text-gray-700 fw-bolder mb-0" for="cpf">CPF</label>
     <input class="form-control input-cpf" id="cpf" name="cpf" value="{{ old('cpf', $data['cpf'] ?? ($data['cif'] ?? '')) }}" placeholder="000.000.000-00" required>
     <div id="cpf-error" class="invalid-feedback d-none">Informe um CPF valido.</div>
+    <div id="cpf-exists-error" class="invalid-feedback d-none">Já existe uma conta associada com esse CPF no mi.Core. Utilize outro CPF para continuar</div>
 </div>
 <div class="mb-3" id="cnpj-field">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="cnpj">CNPJ</label>
     <input class="form-control input-cnpj" id="cnpj" name="cnpj" value="{{ old('cnpj', $data['cnpj'] ?? '') }}" placeholder="00.000.000/0000-00" required>
+    <div id="cnpj-exists-error" class="invalid-feedback d-none">Já existe uma conta associada com esse CNPJ no mi.Core. Utilize outro CNPJ para continuar</div>
 </div>
 <input
     type="hidden"
@@ -44,7 +50,32 @@
 </div>
 <div class="mb-3">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="password">Senha</label>
-    <input class="form-control" id="password" type="password" name="password" value="{{ old('password', $data['password'] ?? '') }}" placeholder="Crie uma senha" required>
+    <input class="form-control" id="password" type="password" name="password" value="{{ old('password', $data['password'] ?? '') }}" placeholder="Crie uma senha" minlength="8" maxlength="32" required>
+    <div id="password-rules" class="d-none mt-3">
+        <div class="small text-muted mb-2">Sua senha precisa conter:</div>
+        <ul class="list-unstyled mb-0 small" id="password-rules-list">
+            <li class="d-flex align-items-center gap-2 mb-1" data-rule="length">
+                <i class="fa-solid fa-xmark text-danger"></i>
+                <span>Mínimo 8 e máximo 32 caracteres</span>
+            </li>
+            <li class="d-flex align-items-center gap-2 mb-1" data-rule="uppercase">
+                <i class="fa-solid fa-xmark text-danger"></i>
+                <span>Ao menos 1 letra maiúscula</span>
+            </li>
+            <li class="d-flex align-items-center gap-2 mb-1" data-rule="lowercase">
+                <i class="fa-solid fa-xmark text-danger"></i>
+                <span>Ao menos 1 letra minúscula</span>
+            </li>
+            <li class="d-flex align-items-center gap-2 mb-1" data-rule="number">
+                <i class="fa-solid fa-xmark text-danger"></i>
+                <span>Ao menos 1 número</span>
+            </li>
+            <li class="d-flex align-items-center gap-2" data-rule="special">
+                <i class="fa-solid fa-xmark text-danger"></i>
+                <span>Ao menos 1 caractere especial</span>
+            </li>
+        </ul>
+    </div>
 </div>
 <div class="form-check mb-3">
     <input class="form-check-input" id="has_coupon" type="checkbox" name="has_coupon" value="1" @checked(old('has_coupon', $data['has_coupon'] ?? false))>
@@ -65,7 +96,7 @@
 
 <div class="d-flex justify-content-between mt-4">
     <span></span>
-    <button class="btn btn-primary w-100" type="submit" name="navigation" value="next">
+    <button class="btn btn-primary w-100" type="submit" name="navigation" value="next" disabled>
         Comecar a testar
     </button>
 </div>
@@ -74,16 +105,42 @@
 <script>
     $(function () {
         // Estado global
+        const checkEmailUrl = '{{ route('onboarding.check-email') }}';
+        const checkDocumentUrl = '{{ route('onboarding.check-document') }}';
         const $noCnpjCheckbox = $('#no_cnpj');
         const $cnpjField = $('#cnpj-field');
         const $cpfField = $('#cpf-field');
         const $hasCouponCheckbox = $('#has_coupon');
         const $couponField = $('#coupon-field');
         const $fillTestDataButton = $('#fill-test-data-account');
+        const $nextStepButton = $('.onboarding-step[data-step="account"] button[name="navigation"][value="next"]');
+        const $fullNameInput = $('#full_name');
+        const $fullNameError = $('#full-name-error');
+        const $emailInput = $('#email');
+        const $emailError = $('#email-error');
         const $cpfInput = $('#cpf');
         const $cnpjInput = $('#cnpj');
         const $cpfError = $('#cpf-error');
+        const $cpfExistsError = $('#cpf-exists-error');
+        const $cnpjExistsError = $('#cnpj-exists-error');
+        const $passwordInput = $('#password');
+        const $passwordRules = $('#password-rules');
+        const $passwordRulesList = $('#password-rules-list');
         const $documentTypeInput = $('#document_type');
+        let hasInteractedWithFullName = false;
+        let hasInteractedWithEmail = false;
+        let hasInteractedWithCpf = false;
+        let hasInteractedWithCnpj = false;
+        let hasInteractedWithPassword = false;
+        let isEmailCheckLoading = false;
+        let isEmailAlreadyRegistered = false;
+        let checkedEmail = '';
+        let activeEmailRequestId = 0;
+        let isDocumentCheckLoading = false;
+        let isDocumentAlreadyRegistered = false;
+        let checkedDocumentType = '';
+        let checkedDocumentValue = '';
+        let activeDocumentRequestId = 0;
 
         // Helpers / utilitarios
         /**
@@ -131,6 +188,64 @@
             return secondDigit === Number(cpfDigits.charAt(10));
         }
 
+        /**
+         * Valida se o nome contem ao menos nome e sobrenome.
+         * Garante um preenchimento mínimo de nome completo.
+         */
+        function isValidFullName(value) {
+            const normalizedName = (value || '').trim().replace(/\s+/g, ' ');
+            const nameParts = normalizedName.split(' ').filter(Boolean);
+            return nameParts.length >= 2;
+        }
+
+        /**
+         * Normaliza o email para comparacoes de estado entre validacoes.
+         * Evita duplicar consultas para o mesmo valor digitado.
+         */
+        function getNormalizedEmail(value) {
+            return (value || '').trim().toLowerCase();
+        }
+
+        /**
+         * Verifica se o email atende as regras basicas do input HTML.
+         * Reaproveita validacao nativa do navegador para reduzir regra manual.
+         */
+        function isEmailSyntaxValid() {
+            const emailValue = getNormalizedEmail($emailInput.val());
+            if (!emailValue.length) {
+                return false;
+            }
+
+            return $emailInput.get(0).checkValidity();
+        }
+
+        /**
+         * Avalia todos os criterios de senha forte exigidos no cadastro.
+         * Centraliza regras para reuso no checklist e bloqueio de avanço.
+         */
+        function getPasswordRulesStatus(value) {
+            const passwordValue = value || '';
+
+            return {
+                length: passwordValue.length >= 8 && passwordValue.length <= 32,
+                uppercase: /[A-Z]/.test(passwordValue),
+                lowercase: /[a-z]/.test(passwordValue),
+                number: /[0-9]/.test(passwordValue),
+                special: /[^A-Za-z0-9]/.test(passwordValue),
+            };
+        }
+
+        /**
+         * Retorna true quando a senha atende todos os criterios obrigatorios.
+         * Evita duplicar validacoes em varios pontos do fluxo.
+         */
+        function isStrongPassword(value) {
+            const rulesStatus = getPasswordRulesStatus(value);
+            return Object.keys(rulesStatus).every(function (ruleKey) {
+                return rulesStatus[ruleKey];
+            });
+        }
+
         // Funcoes de renderizacao / UI
         /**
          * Exibe mensagem de erro para o campo CPF quando a validacao falha.
@@ -146,8 +261,116 @@
          * E usada quando o usuario corrige o valor ou muda de contexto.
          */
         function hideCpfError() {
-            $cpfInput.removeClass('is-invalid');
             $cpfError.addClass('d-none');
+            if ($cpfExistsError.hasClass('d-none')) {
+                $cpfInput.removeClass('is-invalid');
+            }
+        }
+
+        /**
+         * Exibe feedback de erro para nome completo em formato inválido.
+         * Reaproveita classes nativas do Metronic/Bootstrap.
+         */
+        function showFullNameError() {
+            $fullNameInput.addClass('is-invalid');
+            $fullNameError.removeClass('d-none');
+        }
+
+        /**
+         * Remove feedback de erro visual do nome quando valor estiver válido.
+         * Evita mensagem residual durante correção do campo.
+         */
+        function hideFullNameError() {
+            $fullNameInput.removeClass('is-invalid');
+            $fullNameError.addClass('d-none');
+        }
+
+        /**
+         * Exibe mensagem quando o email informado ja existe na central.
+         * Mantem padrao visual de erro com classes nativas do Bootstrap.
+         */
+        function showEmailError() {
+            $emailInput.addClass('is-invalid');
+            $emailError.removeClass('d-none');
+        }
+
+        /**
+         * Limpa mensagem de erro do email ao alterar valor do campo.
+         * Evita exibir estado invalido para um novo email ainda nao testado.
+         */
+        function hideEmailError() {
+            $emailInput.removeClass('is-invalid');
+            $emailError.addClass('d-none');
+        }
+
+        /**
+         * Atualiza icones do checklist da senha para X ou check.
+         * Mantem feedback visual imediato para cada regra.
+         */
+        function renderPasswordRules() {
+            const rulesStatus = getPasswordRulesStatus($passwordInput.val());
+
+            Object.keys(rulesStatus).forEach(function (ruleName) {
+                const $ruleItem = $passwordRulesList.find(`[data-rule="${ruleName}"]`);
+                const $ruleIcon = $ruleItem.find('i');
+                const isRuleValid = rulesStatus[ruleName];
+
+                $ruleIcon
+                    .toggleClass('fa-check text-success', isRuleValid)
+                    .toggleClass('fa-xmark text-danger', !isRuleValid);
+            });
+        }
+
+        /**
+         * Exibe o checklist de senha assim que houver interacao no campo.
+         * Evita poluir a tela antes de o usuario iniciar a digitacao.
+         */
+        function togglePasswordRulesVisibility() {
+            $passwordRules.toggleClass('d-none', !hasInteractedWithPassword);
+        }
+
+        /**
+         * Exibe mensagem de documento ja vinculado na central.
+         * Mantem o campo com estilo de erro padrao do Bootstrap.
+         */
+        function showDocumentExistsError(documentType) {
+            if (documentType === 'cpf') {
+                $cpfInput.addClass('is-invalid');
+                $cpfExistsError.removeClass('d-none');
+                return;
+            }
+
+            $cnpjInput.addClass('is-invalid');
+            $cnpjExistsError.removeClass('d-none');
+        }
+
+        /**
+         * Remove mensagem de duplicidade do documento informado.
+         * Evita erro residual ao trocar valor ou tipo de documento.
+         */
+        function hideDocumentExistsError(documentType) {
+            if (documentType === 'cpf') {
+                $cpfExistsError.addClass('d-none');
+                if ($cpfError.hasClass('d-none')) {
+                    $cpfInput.removeClass('is-invalid');
+                }
+                return;
+            }
+
+            $cnpjInput.removeClass('is-invalid');
+            $cnpjExistsError.addClass('d-none');
+        }
+
+        /**
+         * Reinicia estado da validacao assíncrona de documento.
+         * Cancela respostas antigas quando o usuario altera o input.
+         */
+        function resetDocumentAvailabilityState() {
+            isDocumentCheckLoading = false;
+            isDocumentAlreadyRegistered = false;
+            checkedDocumentType = '';
+            checkedDocumentValue = '';
+            activeDocumentRequestId += 1;
         }
 
         /**
@@ -161,6 +384,9 @@
             $cnpjInput.prop('required', !withoutCnpj);
             $cpfInput.prop('required', withoutCnpj);
             $documentTypeInput.val(withoutCnpj ? 'cpf' : 'cnpj');
+            resetDocumentAvailabilityState();
+            hideDocumentExistsError('cpf');
+            hideDocumentExistsError('cnpj');
             if (!withoutCnpj) {
                 hideCpfError();
             }
@@ -193,6 +419,179 @@
             if (typeof generateMasks === 'function') {
                 generateMasks();
             }
+
+            updateNextStepButtonState();
+        }
+
+        /**
+         * Consulta a central para identificar email ja cadastrado.
+         * Ignora respostas antigas quando o usuario altera rapidamente o valor.
+         */
+        function checkEmailAvailability(forceValidation = false) {
+            const normalizedEmail = getNormalizedEmail($emailInput.val());
+            if (!isEmailSyntaxValid()) {
+                isEmailCheckLoading = false;
+                isEmailAlreadyRegistered = false;
+                checkedEmail = '';
+                hideEmailError();
+                return $.Deferred().resolve(true).promise();
+            }
+
+            if (checkedEmail === normalizedEmail && !isEmailCheckLoading) {
+                if (isEmailAlreadyRegistered && (forceValidation || hasInteractedWithEmail)) {
+                    showEmailError();
+                } else if (!isEmailAlreadyRegistered) {
+                    hideEmailError();
+                }
+
+                return $.Deferred().resolve(!isEmailAlreadyRegistered).promise();
+            }
+
+            const requestId = activeEmailRequestId + 1;
+            activeEmailRequestId = requestId;
+            isEmailCheckLoading = true;
+            checkedEmail = normalizedEmail;
+            updateNextStepButtonState();
+
+            return $.ajax({
+                url: checkEmailUrl,
+                method: 'GET',
+                dataType: 'json',
+                data: { email: normalizedEmail }
+            }).done(function (response) {
+                if (requestId !== activeEmailRequestId) {
+                    return;
+                }
+
+                isEmailAlreadyRegistered = Boolean(response.exists);
+
+                if (isEmailAlreadyRegistered && (forceValidation || hasInteractedWithEmail)) {
+                    showEmailError();
+                    return;
+                }
+
+                hideEmailError();
+            }).fail(function () {
+                if (requestId !== activeEmailRequestId) {
+                    return;
+                }
+
+                // Em caso de indisponibilidade, nao bloqueamos o fluxo por falso positivo.
+                isEmailAlreadyRegistered = false;
+                hideEmailError();
+            }).always(function () {
+                if (requestId !== activeEmailRequestId) {
+                    return;
+                }
+
+                isEmailCheckLoading = false;
+                updateNextStepButtonState();
+            });
+        }
+
+        /**
+         * Retorna se o documento atual possui formato pronto para consulta.
+         * Evita chamadas prematuras antes de o usuario concluir a digitacao.
+         */
+        function isDocumentReadyForLookup(documentType) {
+            if (documentType === 'cpf') {
+                return getDigits($cpfInput.val()).length === 11 && isValidCpf($cpfInput.val());
+            }
+
+            return getDigits($cnpjInput.val()).length === 14;
+        }
+
+        /**
+         * Consulta a central para verificar duplicidade de CPF/CNPJ.
+         * Ignora retorno antigo quando houver nova digitacao.
+         */
+        function checkDocumentAvailability(documentType, forceValidation = false) {
+            const documentValue = getDigits(documentType === 'cpf' ? $cpfInput.val() : $cnpjInput.val());
+            if (!isDocumentReadyForLookup(documentType)) {
+                resetDocumentAvailabilityState();
+                hideDocumentExistsError(documentType);
+                return $.Deferred().resolve(true).promise();
+            }
+
+            if (
+                checkedDocumentType === documentType &&
+                checkedDocumentValue === documentValue &&
+                !isDocumentCheckLoading
+            ) {
+                const hasInteracted = documentType === 'cpf' ? hasInteractedWithCpf : hasInteractedWithCnpj;
+                if (isDocumentAlreadyRegistered && (forceValidation || hasInteracted)) {
+                    showDocumentExistsError(documentType);
+                } else if (!isDocumentAlreadyRegistered) {
+                    hideDocumentExistsError(documentType);
+                }
+
+                return $.Deferred().resolve(!isDocumentAlreadyRegistered).promise();
+            }
+
+            const requestId = activeDocumentRequestId + 1;
+            activeDocumentRequestId = requestId;
+            isDocumentCheckLoading = true;
+            checkedDocumentType = documentType;
+            checkedDocumentValue = documentValue;
+            updateNextStepButtonState();
+
+            return $.ajax({
+                url: checkDocumentUrl,
+                method: 'GET',
+                dataType: 'json',
+                data: {
+                    type: documentType,
+                    value: documentValue
+                }
+            }).done(function (response) {
+                if (requestId !== activeDocumentRequestId) {
+                    return;
+                }
+
+                isDocumentAlreadyRegistered = Boolean(response.exists);
+                const hasInteracted = documentType === 'cpf' ? hasInteractedWithCpf : hasInteractedWithCnpj;
+                if (isDocumentAlreadyRegistered && (forceValidation || hasInteracted)) {
+                    showDocumentExistsError(documentType);
+                    return;
+                }
+
+                hideDocumentExistsError(documentType);
+            }).fail(function () {
+                if (requestId !== activeDocumentRequestId) {
+                    return;
+                }
+
+                // Evita bloquear fluxo em caso de instabilidade temporaria da central.
+                isDocumentAlreadyRegistered = false;
+                hideDocumentExistsError(documentType);
+            }).always(function () {
+                if (requestId !== activeDocumentRequestId) {
+                    return;
+                }
+
+                isDocumentCheckLoading = false;
+                updateNextStepButtonState();
+            });
+        }
+
+        /**
+         * Valida campo de nome completo em modo silencioso ou forçado.
+         * Só mostra erro após interação do usuário ou validação final.
+         */
+        function validateFullNameField(forceValidation = false) {
+            const isNameValid = isValidFullName($fullNameInput.val());
+            if (isNameValid) {
+                hideFullNameError();
+                return true;
+            }
+
+            if (forceValidation || hasInteractedWithFullName) {
+                showFullNameError();
+            } else {
+                hideFullNameError();
+            }
+
+            return false;
         }
 
         /**
@@ -226,16 +625,167 @@
         }
 
         /**
+         * Valida campos obrigatórios visíveis da primeira etapa.
+         * Mantém bloqueio de avanço enquanto houver campos inválidos.
+         */
+        function validateVisibleRequiredFields() {
+            const $requiredFields = $('.onboarding-step[data-step="account"]')
+                .find(':input[required]')
+                .filter(':enabled:visible');
+
+            let isValid = true;
+            $requiredFields.each(function () {
+                if (this.checkValidity()) {
+                    return true;
+                }
+
+                isValid = false;
+                return false;
+            });
+
+            return isValid;
+        }
+
+        /**
+         * Valida disponibilidade do email para permitir avancar no fluxo.
+         * Bloqueia enquanto houver consulta pendente ou email sem consulta.
+         */
+        function validateEmailAvailability(forceValidation = false) {
+            const normalizedEmail = getNormalizedEmail($emailInput.val());
+            if (!isEmailSyntaxValid()) {
+                hideEmailError();
+                return true;
+            }
+
+            if (isEmailCheckLoading) {
+                return false;
+            }
+
+            if (checkedEmail !== normalizedEmail) {
+                if (forceValidation) {
+                    checkEmailAvailability(true);
+                }
+                return false;
+            }
+
+            if (isEmailAlreadyRegistered) {
+                if (forceValidation || hasInteractedWithEmail) {
+                    showEmailError();
+                }
+                return false;
+            }
+
+            hideEmailError();
+            return true;
+        }
+
+        /**
+         * Valida disponibilidade do documento ativo na etapa account.
+         * Bloqueia avanço quando houver consulta pendente ou duplicidade.
+         */
+        function validateDocumentAvailability(forceValidation = false) {
+            const documentType = $noCnpjCheckbox.is(':checked') ? 'cpf' : 'cnpj';
+            if (!isDocumentReadyForLookup(documentType)) {
+                hideDocumentExistsError(documentType);
+                return true;
+            }
+
+            if (isDocumentCheckLoading) {
+                return false;
+            }
+
+            const currentValue = getDigits(documentType === 'cpf' ? $cpfInput.val() : $cnpjInput.val());
+            if (checkedDocumentType !== documentType || checkedDocumentValue !== currentValue) {
+                if (forceValidation) {
+                    checkDocumentAvailability(documentType, true);
+                }
+                return false;
+            }
+
+            if (isDocumentAlreadyRegistered) {
+                const hasInteracted = documentType === 'cpf' ? hasInteractedWithCpf : hasInteractedWithCnpj;
+                if (forceValidation || hasInteracted) {
+                    showDocumentExistsError(documentType);
+                }
+                return false;
+            }
+
+            hideDocumentExistsError(documentType);
+            return true;
+        }
+
+        /**
+         * Valida senha forte e sincroniza com validacao nativa do navegador.
+         * Aplica mensagem customizada somente apos interacao do usuario.
+         */
+        function validatePasswordField(forceValidation = false) {
+            const passwordValue = $passwordInput.val() || '';
+            const isPasswordValid = isStrongPassword(passwordValue);
+            const shouldShowValidation = forceValidation || hasInteractedWithPassword;
+
+            if (shouldShowValidation && passwordValue.length && !isPasswordValid) {
+                $passwordInput.get(0).setCustomValidity('A senha nao atende aos critérios mínimos.');
+            } else {
+                $passwordInput.get(0).setCustomValidity('');
+            }
+
+            $passwordInput.toggleClass('is-invalid', shouldShowValidation && passwordValue.length && !isPasswordValid);
+            renderPasswordRules();
+            return isPasswordValid;
+        }
+
+        /**
+         * Atualiza estado do botão de avanço conforme regras da etapa 1.
+         * Libera botão somente quando todas as validações passarem.
+         */
+        function updateNextStepButtonState() {
+            const isFullNameValid = validateFullNameField(false);
+            const isEmailAvailable = validateEmailAvailability(false);
+            const isCpfValid = validateCpfField(false);
+            const isDocumentAvailable = validateDocumentAvailability(false);
+            const isPasswordValid = validatePasswordField(false);
+            const hasValidRequiredFields = validateVisibleRequiredFields();
+            const canProceed = isFullNameValid && isEmailAvailable && isCpfValid && isDocumentAvailable && isPasswordValid && hasValidRequiredFields;
+
+            $nextStepButton.prop('disabled', !canProceed);
+        }
+
+        /**
          * Executa validacoes do step account antes de avancar no wizard.
          * Garante foco no campo CPF quando houver erro de preenchimento.
          */
         function validateAccountStep() {
+            const isFullNameValid = validateFullNameField(true);
+            if (!isFullNameValid) {
+                $fullNameInput.trigger('focus');
+                return false;
+            }
+
+            const isEmailAvailable = validateEmailAvailability(true);
+            if (!isEmailAvailable) {
+                $emailInput.trigger('focus');
+                return false;
+            }
+
             const isCpfValid = validateCpfField(true);
             if (!isCpfValid) {
                 $cpfInput.trigger('focus');
+                return false;
             }
 
-            return isCpfValid;
+            const isDocumentAvailable = validateDocumentAvailability(true);
+            if (!isDocumentAvailable) {
+                ($noCnpjCheckbox.is(':checked') ? $cpfInput : $cnpjInput).trigger('focus');
+                return false;
+            }
+
+            const isPasswordValid = validatePasswordField(true);
+            if (!isPasswordValid) {
+                $passwordInput.trigger('focus');
+                return false;
+            }
+
+            return validateVisibleRequiredFields();
         }
 
         // Event listeners
@@ -256,23 +806,60 @@
          * e facilitar validacoes manuais durante o desenvolvimento.
          */
         $fillTestDataButton.on('click', fillTestDataStep);
+        $fullNameInput.on('input', function () {
+            validateFullNameField(false);
+            updateNextStepButtonState();
+        });
+        $fullNameInput.on('blur', function () {
+            hasInteractedWithFullName = true;
+            validateFullNameField(true);
+            updateNextStepButtonState();
+        });
+        /**
+         * Escuta mudancas no email para invalidar a ultima consulta
+         * e impedir que email novo reutilize validacao de valor antigo.
+         */
+        $emailInput.on('input', function () {
+            isEmailCheckLoading = false;
+            isEmailAlreadyRegistered = false;
+            checkedEmail = '';
+            activeEmailRequestId += 1;
+            hideEmailError();
+            updateNextStepButtonState();
+        });
+
+        /**
+         * Escuta saida do campo de email para consultar duplicidade
+         * e exibir mensagem de erro apenas apos finalizar preenchimento.
+         */
+        $emailInput.on('blur', function () {
+            hasInteractedWithEmail = true;
+            checkEmailAvailability(true);
+        });
 
         /**
          * Escuta digitacao no CPF para validar apenas quando houver 11 digitos
          * e evitar feedback de erro prematuro durante o preenchimento.
          */
         $cpfInput.on('input', function () {
+            hasInteractedWithCpf = true;
+            resetDocumentAvailabilityState();
+            hideDocumentExistsError('cpf');
+
             if (!$noCnpjCheckbox.is(':checked')) {
                 hideCpfError();
+                updateNextStepButtonState();
                 return;
             }
 
             if (getDigits($cpfInput.val()).length === 11) {
                 validateCpfField();
+                updateNextStepButtonState();
                 return;
             }
 
             hideCpfError();
+            updateNextStepButtonState();
         });
 
         /**
@@ -280,17 +867,80 @@
          * e manter a regra de erro apenas quando o documento estiver finalizado.
          */
         $cpfInput.on('blur', function () {
+            hasInteractedWithCpf = true;
             if (!$noCnpjCheckbox.is(':checked')) {
                 hideCpfError();
+                updateNextStepButtonState();
                 return;
             }
 
             if (getDigits($cpfInput.val()).length === 11) {
                 validateCpfField(true);
+                if (isValidCpf($cpfInput.val())) {
+                    checkDocumentAvailability('cpf', true);
+                }
+                updateNextStepButtonState();
                 return;
             }
 
             hideCpfError();
+            hideDocumentExistsError('cpf');
+            updateNextStepButtonState();
+        });
+
+        /**
+         * Escuta alteracoes no CNPJ para invalidar consulta anterior
+         * e garantir verificação com o valor final digitado no campo.
+         */
+        $cnpjInput.on('input', function () {
+            hasInteractedWithCnpj = true;
+            resetDocumentAvailabilityState();
+            hideDocumentExistsError('cnpj');
+            updateNextStepButtonState();
+        });
+
+        /**
+         * Escuta saida do CNPJ e consulta duplicidade na central.
+         * Exibe erro abaixo do campo quando ja houver conta vinculada.
+         */
+        $cnpjInput.on('blur', function () {
+            hasInteractedWithCnpj = true;
+            if ($noCnpjCheckbox.is(':checked')) {
+                hideDocumentExistsError('cnpj');
+                updateNextStepButtonState();
+                return;
+            }
+
+            if (getDigits($cnpjInput.val()).length === 14) {
+                checkDocumentAvailability('cnpj', true);
+                updateNextStepButtonState();
+                return;
+            }
+
+            hideDocumentExistsError('cnpj');
+            updateNextStepButtonState();
+        });
+
+        /**
+         * Escuta digitacao na senha para exibir checklist e atualizar status.
+         * Mantem o botao bloqueado ate todas as regras serem satisfeitas.
+         */
+        $passwordInput.on('input', function () {
+            hasInteractedWithPassword = true;
+            togglePasswordRulesVisibility();
+            validatePasswordField(false);
+            updateNextStepButtonState();
+        });
+
+        /**
+         * Escuta saida do campo senha para reforcar validacao final.
+         * Garante borda de erro quando usuario deixa campo invalido.
+         */
+        $passwordInput.on('blur', function () {
+            hasInteractedWithPassword = true;
+            togglePasswordRulesVisibility();
+            validatePasswordField(true);
+            updateNextStepButtonState();
         });
 
         /**
@@ -298,6 +948,9 @@
          * quando o usuario alterna rapidamente entre os tipos de documento.
          */
         $noCnpjCheckbox.on('change', hideCpfError);
+        $noCnpjCheckbox.on('change', updateNextStepButtonState);
+        $hasCouponCheckbox.on('change', updateNextStepButtonState);
+        $('#phone').on('input blur', updateNextStepButtonState);
 
         if (typeof generateMasks === 'function') {
             generateMasks();
@@ -307,6 +960,9 @@
 
         toggleDocumentFields();
         toggleCouponField();
+        togglePasswordRulesVisibility();
+        validatePasswordField(false);
+        updateNextStepButtonState();
     });
 </script>
 @endpush

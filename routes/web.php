@@ -10,3 +10,5 @@ Route::get('/', function () {
 Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding.show');
 Route::post('/onboarding', [OnboardingController::class, 'submit'])->name('onboarding.submit');
 Route::get('/onboarding/success', [OnboardingController::class, 'success'])->name('onboarding.success');
+Route::get('/onboarding/check-email', [OnboardingController::class, 'checkEmail'])->name('onboarding.check-email');
+Route::get('/onboarding/check-document', [OnboardingController::class, 'checkDocument'])->name('onboarding.check-document');

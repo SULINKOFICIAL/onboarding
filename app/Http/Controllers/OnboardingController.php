@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -64,6 +67,89 @@ class OnboardingController extends Controller
 
         return view('onboarding.success', [
             'data' => $submittedData,
+        ]);
+    }
+
+    public function checkEmail(Request $request): JsonResponse
+    {
+        $payload = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+        ]);
+
+        $endpoint = rtrim((string) config('services.core_business.url'), '/') . '/api/micore/encontrar-cliente';
+
+        try {
+            $response = Http::asForm()
+                ->acceptJson()
+                ->timeout(6)
+                ->post($endpoint, ['email' => $payload['email']]);
+
+            if ($response->successful()) {
+                return response()->json([
+                    'exists' => true,
+                    'checked' => true,
+                ]);
+            }
+
+            if ($response->status() === 404) {
+                return response()->json([
+                    'exists' => false,
+                    'checked' => true,
+                ]);
+            }
+        } catch (\Throwable $exception) {
+            Log::warning('Falha ao consultar email na central durante onboarding.', [
+                'email' => $payload['email'],
+                'error' => $exception->getMessage(),
+            ]);
+        }
+
+        return response()->json([
+            'exists' => false,
+            'checked' => false,
+        ]);
+    }
+
+    public function checkDocument(Request $request): JsonResponse
+    {
+        $payload = $request->validate([
+            'type' => ['required', 'in:cpf,cnpj'],
+            'value' => ['required', 'string'],
+        ]);
+
+        $documentValue = preg_replace('/\D+/', '', $payload['value']);
+        $endpoint = rtrim((string) config('services.core_business.url'), '/') . '/api/micore/encontrar-cliente';
+
+        try {
+            $response = Http::asForm()
+                ->acceptJson()
+                ->timeout(6)
+                ->post($endpoint, [$payload['type'] => $documentValue]);
+
+            if ($response->successful()) {
+                return response()->json([
+                    'exists' => true,
+                    'checked' => true,
+                ]);
+            }
+
+            if ($response->status() === 404) {
+                return response()->json([
+                    'exists' => false,
+                    'checked' => true,
+                ]);
+            }
+        } catch (\Throwable $exception) {
+            Log::warning('Falha ao consultar documento na central durante onboarding.', [
+                'document_type' => $payload['type'],
+                'document_value' => $documentValue,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+
+        return response()->json([
+            'exists' => false,
+            'checked' => false,
         ]);
     }
 
