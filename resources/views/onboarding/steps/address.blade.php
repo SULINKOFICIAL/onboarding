@@ -82,7 +82,7 @@
 
 <div class="d-flex justify-content-between mt-4 gap-3">
     {{-- <button class="btn btn-light" type="submit" name="navigation" value="back" formnovalidate>Voltar</button> --}}
-    <button id="onboarding-finish-button" class="btn btn-primary w-100" type="submit" name="navigation" value="next" disabled>Finalizar</button>
+    <button id="onboarding-finish-button" class="btn btn-primary w-100" type="submit" name="navigation" value="next" disabled>Finalizar e acessar o sistema</button>
 </div>
 
 <button
@@ -105,6 +105,7 @@
         const $companyNeighborhoodInput = $('#company_neighborhood');
         const $fillTestDataAddressButton = $('#fill-test-data-address');
         const $finishButton = $('#onboarding-finish-button');
+        const $addressStep = $('.onboarding-step[data-step="address"]');
 
         // Helpers / utilitarios
         /**
@@ -181,6 +182,10 @@
          * Mantem complemento opcional fora da regra de bloqueio.
          */
         function hasValidRequiredAddressFields() {
+            if (!$addressStep.is(':visible')) {
+                return false;
+            }
+
             const $requiredFields = $('.onboarding-step[data-step="address"]')
                 .find(':input[required]')
                 .filter(':enabled:visible');
