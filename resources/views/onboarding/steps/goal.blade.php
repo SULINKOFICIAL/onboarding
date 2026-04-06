@@ -17,33 +17,45 @@
     <div class="row g-4 mt-1">
         <div class="col-12 col-lg-6">
             <input class="btn-check" id="goal_centralizar_atendimentos" type="radio" name="main_goal" value="centralizar_atendimentos" autocomplete="off" @checked(old('main_goal', $data['main_goal'] ?? '') === 'centralizar_atendimentos')>
-            <label class="btn bg-gray-200 btn-success-mc rounded-4 p-6 text-start w-100 h-100 d-flex flex-column justify-content-center align-items-start" for="goal_centralizar_atendimentos">
-                <span class="fs-4 fw-bold text-gray-800 mb-1">Centralizar Atendimentos</span>
-                <span class="fs-6 text-gray-600 lh-sm fw-normal">Organize canais e conversas em um unico lugar</span>
+            <label class="btn bg-gray-200 btn-success-mc rounded-4 p-6 text-start w-100 h-100 d-flex justify-content-between align-items-start gap-4" for="goal_centralizar_atendimentos">
+                <span class="d-flex flex-column">
+                    <span class="fs-4 fw-bold text-gray-800 mb-1">Centralizar Atendimentos</span>
+                    <span class="fs-6 text-gray-600 lh-sm fw-normal">Organize canais e conversas em um unico lugar</span>
+                </span>
+                <i class="fa-solid fa-comments fs-2 text-gray-700 mt-1"></i>
             </label>
         </div>
 
         <div class="col-12 col-lg-6">
             <input class="btn-check" id="goal_vender_online" type="radio" name="main_goal" value="vender_online" autocomplete="off" @checked(old('main_goal', $data['main_goal'] ?? '') === 'vender_online')>
-            <label class="btn bg-gray-200 btn-success-mc rounded-4 p-6 text-start w-100 h-100 d-flex flex-column justify-content-center align-items-start" for="goal_vender_online">
-                <span class="fs-4 fw-bold text-gray-800 mb-1">Vender Online</span>
-                <span class="fs-6 text-gray-600 lh-sm fw-normal">Acelere vendas com processos simples e rapidos</span>
+            <label class="btn bg-gray-200 btn-success-mc rounded-4 p-6 text-start w-100 h-100 d-flex justify-content-between align-items-start gap-4" for="goal_vender_online">
+                <span class="d-flex flex-column">
+                    <span class="fs-4 fw-bold text-gray-800 mb-1">Vender Online</span>
+                    <span class="fs-6 text-gray-600 lh-sm fw-normal">Acelere vendas com processos simples e rapidos</span>
+                </span>
+                <i class="fa-solid fa-cart-shopping fs-2 text-gray-700 mt-1"></i>
             </label>
         </div>
 
         <div class="col-12 col-lg-6">
             <input class="btn-check" id="goal_controlar_estoque" type="radio" name="main_goal" value="controlar_estoque" autocomplete="off" @checked(old('main_goal', $data['main_goal'] ?? '') === 'controlar_estoque')>
-            <label class="btn bg-gray-200 btn-success-mc rounded-4 p-6 text-start w-100 h-100 d-flex flex-column justify-content-center align-items-start" for="goal_controlar_estoque">
-                <span class="fs-4 fw-bold text-gray-800 mb-1">Controlar Estoque</span>
-                <span class="fs-6 text-gray-600 lh-sm fw-normal">Acompanhe entradas, saidas e reposicoes com seguranca</span>
+            <label class="btn bg-gray-200 btn-success-mc rounded-4 p-6 text-start w-100 h-100 d-flex justify-content-between align-items-start gap-4" for="goal_controlar_estoque">
+                <span class="d-flex flex-column">
+                    <span class="fs-4 fw-bold text-gray-800 mb-1">Controlar Estoque</span>
+                    <span class="fs-6 text-gray-600 lh-sm fw-normal">Acompanhe entradas, saidas e reposicoes com seguranca</span>
+                </span>
+                <i class="fa-solid fa-boxes-stacked fs-2 text-gray-700 mt-1"></i>
             </label>
         </div>
 
         <div class="col-12 col-lg-6">
             <input class="btn-check" id="goal_vender_servicos" type="radio" name="main_goal" value="vender_servicos" autocomplete="off" @checked(old('main_goal', $data['main_goal'] ?? '') === 'vender_servicos')>
-            <label class="btn bg-gray-200 btn-success-mc rounded-4 p-6 text-start w-100 h-100 d-flex flex-column justify-content-center align-items-start" for="goal_vender_servicos">
-                <span class="fs-4 fw-bold text-gray-800 mb-1">Vender Servicos</span>
-                <span class="fs-6 text-gray-600 lh-sm fw-normal">Monte pacotes e ganhe produtividade no atendimento</span>
+            <label class="btn bg-gray-200 btn-success-mc rounded-4 p-6 text-start w-100 h-100 d-flex justify-content-between align-items-start gap-4" for="goal_vender_servicos">
+                <span class="d-flex flex-column">
+                    <span class="fs-4 fw-bold text-gray-800 mb-1">Vender Servicos</span>
+                    <span class="fs-6 text-gray-600 lh-sm fw-normal">Monte pacotes e ganhe produtividade no atendimento</span>
+                </span>
+                <i class="fa-solid fa-briefcase fs-2 text-gray-700 mt-1"></i>
             </label>
         </div>
     </div>
