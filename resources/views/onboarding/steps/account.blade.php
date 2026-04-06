@@ -55,7 +55,7 @@
         <button
             id="toggle-password-visibility"
             type="button"
-            class="btn btn-sm btn-icon position-absolute top-50 end-0 translate-middle-y me-9 border-0 bg-transparent text-muted"
+            class="btn btn-sm btn-icon position-absolute top-50 end-0 translate-middle-y me-1 border-0 bg-transparent text-muted bg-white"
             aria-label="Mostrar ou ocultar senha"
         >
             <i id="toggle-password-icon" class="fa-regular fa-eye fs-5"></i>
@@ -66,23 +66,23 @@
         <ul class="list-unstyled mb-0 small" id="password-rules-list">
             <li class="d-flex align-items-center gap-2 mb-1" data-rule="length">
                 <i class="fa-solid fa-xmark text-danger"></i>
-                <span>Mínimo 8 e máximo 32 caracteres</span>
+                <span class="text-gray-700">Mínimo 8 e máximo 32 caracteres</span>
             </li>
             <li class="d-flex align-items-center gap-2 mb-1" data-rule="uppercase">
                 <i class="fa-solid fa-xmark text-danger"></i>
-                <span>Ao menos 1 letra maiúscula</span>
+                <span class="text-gray-700">Ao menos 1 letra maiúscula</span>
             </li>
             <li class="d-flex align-items-center gap-2 mb-1" data-rule="lowercase">
                 <i class="fa-solid fa-xmark text-danger"></i>
-                <span>Ao menos 1 letra minúscula</span>
+                <span class="text-gray-700">Ao menos 1 letra minúscula</span>
             </li>
             <li class="d-flex align-items-center gap-2 mb-1" data-rule="number">
                 <i class="fa-solid fa-xmark text-danger"></i>
-                <span>Ao menos 1 número</span>
+                <span class="text-gray-700">Ao menos 1 número</span>
             </li>
             <li class="d-flex align-items-center gap-2" data-rule="special">
                 <i class="fa-solid fa-xmark text-danger"></i>
-                <span>Ao menos 1 caractere especial</span>
+                <span class="text-gray-700">Ao menos 1 caractere especial</span>
             </li>
         </ul>
     </div>
