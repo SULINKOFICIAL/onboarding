@@ -11,7 +11,7 @@
     Conte pra gente o perfil da sua empresa para personalizarmos sua experiência.
 </h1>
 
-<div class="mb-3">
+<div class="mb-12">
     <p class="form-label text-gray-700 fw-bolder mb-0">Qual o perfil da empresa?</p>
 
     <div class="row g-4 mt-1">
