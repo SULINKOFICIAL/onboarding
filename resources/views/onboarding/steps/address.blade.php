@@ -2,6 +2,18 @@
     Finalize seu cadastro com o endereco da empresa e comece a testar.
 </h1>
 
+@php
+    $companyCity = old('company_city', $data['company_city'] ?? '');
+    $companyState = old('company_state', $data['company_state'] ?? '');
+    $companyCityState = old('company_city_state', $data['company_city_state'] ?? '');
+
+    if ((!$companyCity || !$companyState) && $companyCityState) {
+        $cityStateParts = array_map('trim', explode('-', $companyCityState));
+        $companyCity = $companyCity ?: ($cityStateParts[0] ?? '');
+        $companyState = $companyState ?: ($cityStateParts[1] ?? '');
+    }
+@endphp
+
 <div class="mb-3">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="company_zip_code">Qual o CEP da empresa?</label>
     <div class="position-relative">
@@ -22,17 +34,32 @@
 </div>
 
 <div id="zip-address-fields" class="{{ old('company_zip_code', $data['company_zip_code'] ?? '') ? '' : 'd-none' }}">
-    <div class="mb-3">
-        <label class="form-label text-gray-700 fw-bolder mb-0" for="company_city_state">Cidade, estado</label>
-        <input
-            class="form-control"
-            id="company_city_state"
-            name="company_city_state"
-            value="{{ old('company_city_state', $data['company_city_state'] ?? '') }}"
-            placeholder="Cidade - UF"
-            required
-        >
+    <div class="row g-3 mb-3">
+        <div class="col-md-8">
+            <label class="form-label text-gray-700 fw-bolder mb-0" for="company_city">Cidade</label>
+            <input
+                class="form-control"
+                id="company_city"
+                name="company_city"
+                value="{{ $companyCity }}"
+                placeholder="Cidade"
+                required
+            >
+        </div>
+        <div class="col-md-4">
+            <label class="form-label text-gray-700 fw-bolder mb-0" for="company_state">Estado</label>
+            <input
+                class="form-control text-uppercase"
+                id="company_state"
+                name="company_state"
+                value="{{ $companyState }}"
+                maxlength="2"
+                placeholder="UF"
+                required
+            >
+        </div>
     </div>
+    <input type="hidden" id="company_city_state" name="company_city_state" value="{{ $companyCityState }}">
     <div class="mb-3">
         <label class="form-label text-gray-700 fw-bolder mb-0" for="company_address">Endereco</label>
         <input
@@ -100,6 +127,8 @@
         const $companyZipCodeInput = $('#company_zip_code');
         const $zipCodeLoading = $('#zip-code-loading');
         const $zipAddressFields = $('#zip-address-fields');
+        const $companyCityInput = $('#company_city');
+        const $companyStateInput = $('#company_state');
         const $companyCityStateInput = $('#company_city_state');
         const $companyAddressInput = $('#company_address');
         const $companyNeighborhoodInput = $('#company_neighborhood');
@@ -139,13 +168,31 @@
         }
 
         /**
+         * Sincroniza campo oculto esperado pelo backend com cidade e estado.
+         * Mantem compatibilidade sem perder separacao visual dos campos.
+         */
+        function syncCityStateHiddenField() {
+            const city = ($companyCityInput.val() || '').trim();
+            const state = ($companyStateInput.val() || '').trim().toUpperCase();
+            if (state !== $companyStateInput.val()) {
+                $companyStateInput.val(state);
+            }
+
+            const cityStateValue = city && state ? `${city} - ${state}` : (city || state);
+            $companyCityStateInput.val(cityStateValue);
+        }
+
+        /**
          * Aplica dados retornados pelo ViaCEP nos campos de endereco.
          * Usa fallback para strings vazias em respostas parciais.
          */
         function applyZipCodePayload(payload) {
-            $companyCityStateInput.val(`${payload.localidade || ''} - ${payload.uf || ''}`.trim());
+            $companyCityInput.val(payload.localidade || '');
+            $companyStateInput.val((payload.uf || '').toUpperCase());
+            syncCityStateHiddenField();
             $companyAddressInput.val(payload.logradouro || '');
             $companyNeighborhoodInput.val(payload.bairro || '');
+            updateFinishButtonState();
         }
 
         /**
@@ -249,7 +296,9 @@
         $fillTestDataAddressButton.on('click', function () {
             $companyZipCodeInput.val('01310-100');
             showZipAddressFields();
-            $companyCityStateInput.val('Sao Paulo - SP');
+            $companyCityInput.val('Sao Paulo');
+            $companyStateInput.val('SP');
+            syncCityStateHiddenField();
             $companyAddressInput.val('Avenida Paulista');
             $companyNeighborhoodInput.val('Bela Vista');
             $('#company_number').val('1000');
@@ -261,8 +310,17 @@
          * Escuta alteracoes nos campos obrigatorios de endereco para habilitar
          * o botao finalizar somente quando o preenchimento estiver completo.
          */
-        $('#company_city_state, #company_address, #company_neighborhood, #company_number').on('input blur', updateFinishButtonState);
+        $companyCityInput.on('input blur', function () {
+            syncCityStateHiddenField();
+            updateFinishButtonState();
+        });
+        $companyStateInput.on('input blur', function () {
+            syncCityStateHiddenField();
+            updateFinishButtonState();
+        });
+        $('#company_address, #company_neighborhood, #company_number').on('input blur', updateFinishButtonState);
 
+        syncCityStateHiddenField();
         updateFinishButtonState();
     });
 </script>
