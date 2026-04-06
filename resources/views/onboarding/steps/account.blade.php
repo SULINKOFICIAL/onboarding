@@ -2,9 +2,9 @@
     <span class="badge badge-success">30 dias gratuitos</span>
 </div>
 <div class="d-flex gap-2 mb-3" aria-label="Progresso do onboarding">
-    @for ($bar = 1; $bar <= 3; $bar++)
-        <div class="flex-fill rounded-pill h-10px {{ ($currentStepIndex + 1) >= $bar ? 'bg-primary' : 'bg-gray-200' }}"></div>
-    @endfor
+    <div class="flex-fill rounded-pill h-10px bg-primary"></div>
+    <div class="flex-fill rounded-pill h-10px bg-gray-200"></div>
+    <div class="flex-fill rounded-pill h-10px bg-gray-200"></div>
 </div>
 
 <h1 class="fs-2x fw-bolder mt-6 mb-10 me-md-13">
@@ -49,7 +49,7 @@
 </div>
 
 <button
-    id="fill-test-data"
+    id="fill-test-data-account"
     type="button"
     class="btn btn-dark position-fixed bottom-0 end-0 m-4 shadow"
 >
@@ -62,6 +62,47 @@
         Comecar a testar
     </button>
 </div>
+
+<script>
+    $(function () {
+        const $noCnpjCheckbox = $('#no_cnpj');
+        const $cnpjField = $('#cnpj-field');
+        const $cpfField = $('#cpf-field');
+        const $hasCouponCheckbox = $('#has_coupon');
+        const $couponField = $('#coupon-field');
+        const $fillTestDataButton = $('#fill-test-data-account');
+
+        function toggleDocumentFields() {
+            const withoutCnpj = $noCnpjCheckbox.is(':checked');
+            $cnpjField.toggleClass('d-none', withoutCnpj);
+            $cpfField.toggleClass('d-none', !withoutCnpj);
+        }
+
+        function toggleCouponField() {
+            $couponField.toggleClass('d-none', !$hasCouponCheckbox.is(':checked'));
+        }
+
+        function fillTestDataStep() {
+            $('#full_name').val('Usuario Teste');
+            $('#email').val('teste+onboarding@micore.com');
+            $('#phone').val('11999999999');
+            $('#no_cnpj').prop('checked', false).trigger('change');
+            $('#cnpj').val('12345678000199');
+            $('#password').val('Senha@12345');
+            $('#has_coupon').prop('checked', true).trigger('change');
+            $('#coupon_code').val('BEMVINDO10');
+            $('#tips_whatsapp').prop('checked', true);
+            $('#tips_email').prop('checked', true);
+        }
+
+        $noCnpjCheckbox.on('change', toggleDocumentFields);
+        $hasCouponCheckbox.on('change', toggleCouponField);
+        $fillTestDataButton.on('click', fillTestDataStep);
+
+        toggleDocumentFields();
+        toggleCouponField();
+    });
+</script>
 
 <div class="mt-15">
     <p class="form-label text-gray-700 fw-bolder mb-1">Receber dicas</p>
@@ -79,111 +120,3 @@
         Este site e protegido por reCAPTCHA. A Politica de Privacidade e os Termos de Uso do Google se aplicam.
     </p>
 </div>
-
-@section('custom-footer')
-    <script>
-        // Estado global
-        const $noCnpjCheckbox = $('#no_cnpj');
-        const $cnpjField = $('#cnpj-field');
-        const $cpfField = $('#cpf-field');
-        const $hasCouponCheckbox = $('#has_coupon');
-        const $couponField = $('#coupon-field');
-        const $fillTestDataButton = $('#fill-test-data');
-
-        // Helpers / utilitários
-        /**
-         * Define valor em um input quando ele existe para evitar erros em etapas diferentes.
-         * Mantem o preenchimento de teste centralizado e reutilizavel.
-         */
-        function setInputValue(selector, value) {
-            const $input = $(selector);
-            if (!$input.length) {
-                return;
-            }
-
-            $input.val(value);
-        }
-
-        /**
-         * Define estado de checkbox e dispara change para manter efeitos colaterais originais.
-         * O disparo de evento garante a mesma logica das interacoes manuais.
-         */
-        function setCheckboxValue(selector, isChecked) {
-            const $checkbox = $(selector);
-            if (!$checkbox.length) {
-                return;
-            }
-
-            $checkbox.prop('checked', isChecked).trigger('change');
-        }
-
-        // Funções de renderização / UI
-        /**
-         * Controla exibicao de CNPJ e CPF com base no checkbox "Nao tenho CNPJ".
-         * Essa regra preserva a alternancia original entre os dois campos.
-         */
-        function toggleDocumentFields() {
-            if (!$noCnpjCheckbox.length || !$cnpjField.length || !$cpfField.length) {
-                return;
-            }
-
-            const withoutCnpj = $noCnpjCheckbox.is(':checked');
-            $cnpjField.toggleClass('d-none', withoutCnpj);
-            $cpfField.toggleClass('d-none', !withoutCnpj);
-        }
-
-        /**
-         * Controla exibicao do campo de cupom com base no checkbox correspondente.
-         * Mantem o mesmo comportamento do formulario antes da refatoracao.
-         */
-        function toggleCouponField() {
-            if (!$hasCouponCheckbox.length || !$couponField.length) {
-                return;
-            }
-
-            $couponField.toggleClass('d-none', !$hasCouponCheckbox.is(':checked'));
-        }
-
-        /**
-         * Preenche dados de teste da etapa atual para acelerar validacoes manuais.
-         * Mantem os mesmos valores e fluxo utilizados anteriormente.
-         */
-        function fillTestDataStep() {
-            setInputValue('#full_name', 'Usuario Teste');
-            setInputValue('#email', 'teste+onboarding@micore.com');
-            setInputValue('#phone', '11999999999');
-            setCheckboxValue('#no_cnpj', false);
-            setInputValue('#cnpj', '12345678000199');
-            setInputValue('#password', 'Senha@12345');
-            setCheckboxValue('#has_coupon', true);
-            setInputValue('#coupon_code', 'BEMVINDO10');
-
-            // Mantem checkboxes opcionais ativados no preenchimento de teste.
-            $('#tips_whatsapp').prop('checked', true);
-            $('#tips_email').prop('checked', true);
-        }
-
-        // Event listeners
-        /**
-         * Explica o que este listener escuta, o que ele dispara
-         * e por que esse comportamento é necessário neste arquivo.
-         */
-        $noCnpjCheckbox.on('change', toggleDocumentFields);
-
-        /**
-         * Explica o que este listener escuta, o que ele dispara
-         * e por que esse comportamento é necessário neste arquivo.
-         */
-        $hasCouponCheckbox.on('change', toggleCouponField);
-
-        /**
-         * Explica o que este listener escuta, o que ele dispara
-         * e por que esse comportamento é necessário neste arquivo.
-         */
-        $fillTestDataButton.on('click', fillTestDataStep);
-
-        // Garante consistencia visual ao carregar pagina com dados anteriores.
-        toggleDocumentFields();
-        toggleCouponField();
-    </script>
-@endsection

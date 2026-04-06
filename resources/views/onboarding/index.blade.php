@@ -17,9 +17,19 @@
 
                     <form method="POST" action="{{ route('onboarding.submit') }}">
                         @csrf
-                        <input type="hidden" name="current_step" value="{{ $currentStep }}">
 
-                        @includeIf('onboarding.steps.' . $currentStep)
+                        <div class="onboarding-step" data-step="account">
+                            @include('onboarding.steps.account')
+                        </div>
+                        <div class="onboarding-step" data-step="company" style="display: none;">
+                            @include('onboarding.steps.company')
+                        </div>
+                        <div class="onboarding-step" data-step="goal" style="display: none;">
+                            @include('onboarding.steps.goal')
+                        </div>
+                        <div class="onboarding-step" data-step="address" style="display: none;">
+                            @include('onboarding.steps.address')
+                        </div>
                     </form>
                 </div>
             </div>
@@ -43,4 +53,70 @@
             </div>
         </div>
     </div>
+
+@endsection
+
+@section('custom-footer')
+    <script>
+        $(function () {
+            const stepOrder = ['account', 'company', 'goal', 'address'];
+            const $form = $('form');
+            let currentStep = 'account';
+
+            /**
+             * Exibe apenas o step informado e oculta os demais no mesmo formulário.
+             * Mantém todos os steps carregados, alterando apenas o display.
+             */
+            function showStep(stepName) {
+                $('.onboarding-step').hide();
+                $(`.onboarding-step[data-step="${stepName}"]`).show();
+            }
+
+            /**
+             * Retorna o nome do próximo step a partir da ordem atual do wizard.
+             * Mantém a navegação determinística no front-end.
+             */
+            function getAdjacentStep(stepName, direction) {
+                const currentIndex = stepOrder.indexOf(stepName);
+                if (currentIndex < 0) {
+                    return stepOrder[0];
+                }
+
+                const nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+                if (nextIndex < 0 || nextIndex >= stepOrder.length) {
+                    return stepName;
+                }
+
+                return stepOrder[nextIndex];
+            }
+
+            /**
+             * Captura cliques dos botões de navegação e troca o step no front.
+             * Evita submit tradicional e elimina recarregamento da página.
+             */
+            $form.on('click', 'button[name="navigation"]', function (event) {
+                event.preventDefault();
+
+                const direction = $(this).val();
+                if (direction === 'next' && currentStep === 'address') {
+                    currentStep = 'account';
+                    showStep('account');
+                    return;
+                }
+
+                currentStep = getAdjacentStep(currentStep, direction);
+                showStep(currentStep);
+            });
+
+            /**
+             * Bloqueia submit padrão para manter o fluxo 100% client-side.
+             * Garante que navegação ocorra apenas via jQuery.
+             */
+            $form.on('submit', function (event) {
+                event.preventDefault();
+            });
+
+            showStep(currentStep);
+        });
+    </script>
 @endsection

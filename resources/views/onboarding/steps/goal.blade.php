@@ -2,9 +2,9 @@
     <span class="badge badge-success">30 dias gratuitos</span>
 </div>
 <div class="d-flex gap-2 mb-3" aria-label="Progresso do onboarding">
-    @for ($bar = 1; $bar <= 3; $bar++)
-        <div class="flex-fill rounded-pill h-10px {{ ($currentStepIndex + 1) >= $bar ? 'bg-primary' : 'bg-gray-200' }}"></div>
-    @endfor
+    <div class="flex-fill rounded-pill h-10px bg-primary"></div>
+    <div class="flex-fill rounded-pill h-10px bg-primary"></div>
+    <div class="flex-fill rounded-pill h-10px bg-primary"></div>
 </div>
 
 <h1 class="fs-2x fw-bolder mt-6 mb-10 me-md-13">
@@ -12,7 +12,7 @@
 </h1>
 
 <div class="mb-3">
-    <p class="form-label mb-2">O que voce mais quer melhorar agora?</p>
+    <p class="form-label text-gray-700 fw-bolder mb-0">O que voce mais quer melhorar agora?</p>
     <div class="form-check mb-2">
         <input class="form-check-input" id="goal_centralizar_atendimentos" type="radio" name="main_goal" value="centralizar_atendimentos" @checked(old('main_goal', $data['main_goal'] ?? '') === 'centralizar_atendimentos')>
         <label class="form-check-label" for="goal_centralizar_atendimentos">Centralizar Atendimentos</label>
@@ -37,46 +37,17 @@
 </div>
 
 <button
-    id="fill-test-data"
+    id="fill-test-data-goal"
     type="button"
     class="btn btn-dark position-fixed bottom-0 end-0 m-4 shadow"
 >
     Preencher teste
 </button>
 
-@section('custom-footer')
-    <script>
-        // Estado global
-        const $fillTestDataButton = $('#fill-test-data');
-
-        // Helpers / utilitários
-        /**
-         * Marca uma opcao de radio quando o elemento estiver disponivel no DOM.
-         * Evita duplicar validacoes de existencia no restante do script.
-         */
-        function setRadioValue(selector) {
-            const $radio = $(selector);
-            if (!$radio.length) {
-                return;
-            }
-
-            $radio.prop('checked', true);
-        }
-
-        // Funções de renderização / UI
-        /**
-         * Preenche a meta principal padrao para testes rapidos desta etapa.
-         * Preserva o comportamento anterior sem alterar regra de negocio.
-         */
-        function fillTestDataStep() {
-            setRadioValue('input[name="main_goal"][value="vender_online"]');
-        }
-
-        // Event listeners
-        /**
-         * Explica o que este listener escuta, o que ele dispara
-         * e por que esse comportamento é necessário neste arquivo.
-         */
-        $fillTestDataButton.on('click', fillTestDataStep);
-    </script>
-@endsection
+<script>
+    $(function () {
+        $('#fill-test-data-goal').on('click', function () {
+            $('input[name="main_goal"][value="vender_online"]').prop('checked', true);
+        });
+    });
+</script>
