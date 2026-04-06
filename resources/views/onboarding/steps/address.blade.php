@@ -82,6 +82,7 @@
     Preencher teste
 </button>
 
+@push('step-scripts')
 <script>
     $(function () {
         const $companyZipCodeInput = $('#company_zip_code');
@@ -153,3 +154,4 @@
         });
     });
 </script>
+@endpush

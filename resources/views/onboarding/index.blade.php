@@ -56,7 +56,7 @@
 
 @endsection
 
-@section('custom-footer')
+@push('step-scripts')
     <script>
         $(function () {
             const stepOrder = ['account', 'company', 'goal', 'address'];
@@ -119,4 +119,4 @@
             showStep(currentStep);
         });
     </script>
-@endsection
+@endpush

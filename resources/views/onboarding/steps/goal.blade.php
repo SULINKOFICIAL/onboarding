@@ -74,6 +74,7 @@
     Preencher teste
 </button>
 
+@push('step-scripts')
 <script>
     $(function () {
         function syncGoalActiveState() {
@@ -96,3 +97,4 @@
         syncGoalActiveState();
     });
 </script>
+@endpush

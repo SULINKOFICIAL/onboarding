@@ -63,6 +63,7 @@
     </button>
 </div>
 
+@push('step-scripts')
 <script>
     $(function () {
         const $noCnpjCheckbox = $('#no_cnpj');
@@ -71,6 +72,64 @@
         const $hasCouponCheckbox = $('#has_coupon');
         const $couponField = $('#coupon-field');
         const $fillTestDataButton = $('#fill-test-data-account');
+        const $phoneInput = $('#phone');
+        const $cpfInput = $('#cpf');
+        const $cnpjInput = $('#cnpj');
+
+        function getDigits(value) {
+            return (value || '').replace(/\D/g, '');
+        }
+
+        function formatPhone(value) {
+            const digits = getDigits(value).slice(0, 11);
+            if (digits.length <= 2) {
+                return digits;
+            }
+
+            if (digits.length <= 10) {
+                return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}${digits.length > 6 ? `-${digits.slice(6)}` : ''}`;
+            }
+
+            return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+        }
+
+        function formatCpf(value) {
+            const digits = getDigits(value).slice(0, 11);
+            if (digits.length <= 3) {
+                return digits;
+            }
+
+            if (digits.length <= 6) {
+                return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+            }
+
+            if (digits.length <= 9) {
+                return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+            }
+
+            return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+        }
+
+        function formatCnpj(value) {
+            const digits = getDigits(value).slice(0, 14);
+            if (digits.length <= 2) {
+                return digits;
+            }
+
+            if (digits.length <= 5) {
+                return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+            }
+
+            if (digits.length <= 8) {
+                return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+            }
+
+            if (digits.length <= 12) {
+                return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+            }
+
+            return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+        }
 
         function toggleDocumentFields() {
             const withoutCnpj = $noCnpjCheckbox.is(':checked');
@@ -85,9 +144,9 @@
         function fillTestDataStep() {
             $('#full_name').val('Usuario Teste');
             $('#email').val('teste+onboarding@micore.com');
-            $('#phone').val('11999999999');
+            $('#phone').val('(11) 99999-9999');
             $('#no_cnpj').prop('checked', false).trigger('change');
-            $('#cnpj').val('12345678000199');
+            $('#cnpj').val('12.345.678/0001-99');
             $('#password').val('Senha@12345');
             $('#has_coupon').prop('checked', true).trigger('change');
             $('#coupon_code').val('BEMVINDO10');
@@ -95,14 +154,33 @@
             $('#tips_email').prop('checked', true);
         }
 
+        function maskPhoneInput() {
+            $phoneInput.val(formatPhone($phoneInput.val()));
+        }
+
+        function maskCpfInput() {
+            $cpfInput.val(formatCpf($cpfInput.val()));
+        }
+
+        function maskCnpjInput() {
+            $cnpjInput.val(formatCnpj($cnpjInput.val()));
+        }
+
         $noCnpjCheckbox.on('change', toggleDocumentFields);
         $hasCouponCheckbox.on('change', toggleCouponField);
         $fillTestDataButton.on('click', fillTestDataStep);
+        $phoneInput.on('input', maskPhoneInput);
+        $cpfInput.on('input', maskCpfInput);
+        $cnpjInput.on('input', maskCnpjInput);
 
         toggleDocumentFields();
         toggleCouponField();
+        maskPhoneInput();
+        maskCpfInput();
+        maskCnpjInput();
     });
 </script>
+@endpush
 
 <div class="mt-15">
     <p class="form-label text-gray-700 fw-bolder mb-1">Receber dicas</p>

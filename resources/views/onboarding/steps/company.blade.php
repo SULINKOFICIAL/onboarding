@@ -68,6 +68,7 @@
     Preencher teste
 </button>
 
+@push('step-scripts')
 <script>
     $(function () {
         function syncCompanyProfileActiveState() {
@@ -90,3 +91,4 @@
         syncCompanyProfileActiveState();
     });
 </script>
+@endpush
