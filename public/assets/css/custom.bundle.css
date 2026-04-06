@@ -1,11 +1,15 @@
 :root {
-    --bs-success: #68c617;
-    --bs-text-success: #68c617;
+    --bs-success: #3ec400;
+    --bs-text-success: #3ec400;
+    --bs-font-sans-serif: 'Poppins', sans-serif;
+    --kt-font-family: 'Poppins', sans-serif;
+    --bs-heading-color: #363f52;
 }
 
 body {
-  font-family: "Jost", sans-serif;
+    font-family: 'Poppins', sans-serif;
 }
+
 
 [data-bs-theme="light"] body {
     background: #F4F6FA;
@@ -38,4 +42,10 @@ table.table.dataTable.table-striped>tbody>tr:nth-of-type(2n+1)>* {
     border-spacing: 0;
     border-radius: 6px;
     overflow: hidden;
+}
+
+.form-check,
+.form-check-input,
+.form-check-label {
+    cursor: pointer;
 }

@@ -1,21 +1,21 @@
 <div class="mb-3">
-    <label class="form-label" for="full_name">Nome</label>
+    <label class="form-label text-gray-700 fw-bolder mb-0" for="full_name">Nome</label>
     <input class="form-control" id="full_name" name="full_name" value="{{ old('full_name', $data['full_name'] ?? '') }}" placeholder="Digite seu nome completo">
 </div>
 <div class="mb-3">
-    <label class="form-label" for="email">E-mail</label>
+    <label class="form-label text-gray-700 fw-bolder mb-0" for="email">E-mail</label>
     <input class="form-control" id="email" type="email" name="email" value="{{ old('email', $data['email'] ?? '') }}" placeholder="voce@empresa.com">
 </div>
 <div class="mb-3">
-    <label class="form-label" for="phone">Numero</label>
+    <label class="form-label text-gray-700 fw-bolder mb-0" for="phone">Numero</label>
     <input class="form-control" id="phone" name="phone" value="{{ old('phone', $data['phone'] ?? '') }}" placeholder="(11) 99999-9999">
 </div>
 <div class="mb-3 d-none" id="cpf-field">
-    <label class="form-label" for="cpf">CPF</label>
+    <label class="form-label text-gray-700 fw-bolder mb-0" for="cpf">CPF</label>
     <input class="form-control input-cpf" id="cpf" name="cpf" value="{{ old('cpf', $data['cpf'] ?? ($data['cif'] ?? '')) }}" placeholder="000.000.000-00">
 </div>
 <div class="mb-3" id="cnpj-field">
-    <label class="form-label" for="cnpj">CNPJ</label>
+    <label class="form-label text-gray-700 fw-bolder mb-0" for="cnpj">CNPJ</label>
     <input class="form-control" id="cnpj" name="cnpj" value="{{ old('cnpj', $data['cnpj'] ?? '') }}" placeholder="00.000.000/0000-00">
 </div>
 <div class="form-check mb-3">
@@ -23,7 +23,7 @@
     <label class="form-check-label" for="no_cnpj">Nao tenho CNPJ</label>
 </div>
 <div class="mb-3">
-    <label class="form-label" for="password">Senha</label>
+    <label class="form-label text-gray-700 fw-bolder mb-0" for="password">Senha</label>
     <input class="form-control" id="password" type="password" name="password" value="{{ old('password', $data['password'] ?? '') }}" placeholder="Crie uma senha">
 </div>
 <div class="form-check mb-3">
@@ -31,23 +31,8 @@
     <label class="form-check-label" for="has_coupon">Tenho cupom</label>
 </div>
 <div class="mb-3 d-none" id="coupon-field">
-    <label class="form-label" for="coupon_code">Cupom</label>
+    <label class="form-label text-gray-700 fw-bolder mb-0" for="coupon_code">Cupom</label>
     <input class="form-control" id="coupon_code" name="coupon_code" value="{{ old('coupon_code', $data['coupon_code'] ?? '') }}" placeholder="Digite o código do cupom">
-</div>
-
-<div class="mt-4">
-    <p class="fw-semibold mb-2">Receber dicas</p>
-    <div class="form-check">
-        <input class="form-check-input" id="tips_whatsapp" type="checkbox" name="tips_whatsapp" value="1" @checked(old('tips_whatsapp', $data['tips_whatsapp'] ?? false))>
-        <label class="form-check-label" for="tips_whatsapp">Receber por WhatsApp</label>
-    </div>
-    <div class="form-check">
-        <input class="form-check-input" id="tips_email" type="checkbox" name="tips_email" value="1" @checked(old('tips_email', $data['tips_email'] ?? false))>
-        <label class="form-check-label" for="tips_email">Receber por e-mail</label>
-    </div>
-    <p class="text-muted small mt-3 mb-0">
-        Este site e protegido por reCAPTCHA. A Politica de Privacidade e os Termos de Uso do Google se aplicam.
-    </p>
 </div>
 
 <button
