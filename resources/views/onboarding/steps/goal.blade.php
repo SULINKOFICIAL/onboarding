@@ -63,7 +63,7 @@
 
 <div class="d-flex justify-content-between mt-4 gap-3">
     <button class="btn btn-light" type="submit" name="navigation" value="back" formnovalidate>Voltar</button>
-    <button class="btn btn-primary w-100" type="submit" name="navigation" value="next">Continuar</button>
+    <button class="btn btn-primary w-100" type="submit" name="navigation" value="next" disabled>Continuar</button>
 </div>
 
 <button
@@ -81,6 +81,7 @@
         const $goalOptions = $('input[name="main_goals[]"]');
         const $goalCards = $('.btn-success-mc');
         const $fillTestDataGoalButton = $('#fill-test-data-goal');
+        const $nextStepButton = $('.onboarding-step[data-step="goal"] button[name="navigation"][value="next"]');
 
         // Helpers / utilitarios
         /**
@@ -103,12 +104,21 @@
             });
         }
 
+        /**
+         * Atualiza estado do botao continuar conforme selecao dos objetivos.
+         * Libera avancar apenas quando houver ao menos uma opcao marcada.
+         */
+        function updateNextStepButtonState() {
+            $nextStepButton.prop('disabled', !$goalOptions.is(':checked'));
+        }
+
         // Event listeners
         /**
          * Escuta alteracao dos radios de objetivo para atualizar o card ativo
          * e manter consistencia entre input real e estado visual.
          */
         $goalOptions.on('change', syncGoalActiveState);
+        $goalOptions.on('change', updateNextStepButtonState);
 
         /**
          * Escuta clique no card visual para manter sincronia visual
@@ -127,6 +137,7 @@
         });
 
         syncGoalActiveState();
+        updateNextStepButtonState();
     });
 </script>
 @endpush

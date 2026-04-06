@@ -57,7 +57,7 @@
 
 <div class="d-flex justify-content-between mt-4 gap-3">
     <button class="btn btn-light" type="submit" name="navigation" value="back" formnovalidate>Voltar</button>
-    <button class="btn btn-primary w-100" type="submit" name="navigation" value="next">Continuar</button>
+    <button class="btn btn-primary w-100" type="submit" name="navigation" value="next" disabled>Continuar</button>
 </div>
 
 <button
@@ -75,6 +75,7 @@
         const $companyProfileOptions = $('input[name="company_profile"]');
         const $companyProfileCards = $('.btn-success-mc');
         const $fillTestDataCompanyButton = $('#fill-test-data-company');
+        const $nextStepButton = $('.onboarding-step[data-step="company"] button[name="navigation"][value="next"]');
 
         // Helpers / utilitarios
         /**
@@ -97,12 +98,21 @@
             });
         }
 
+        /**
+         * Controla estado do botao continuar com base na selecao de perfil.
+         * Mantem bloqueio ate existir uma opcao marcada no passo atual.
+         */
+        function updateNextStepButtonState() {
+            $nextStepButton.prop('disabled', !$companyProfileOptions.is(':checked'));
+        }
+
         // Event listeners
         /**
          * Escuta alteracao do radio de perfil e atualiza o estado ativo
          * para refletir imediatamente a opcao escolhida pelo usuario.
          */
         $companyProfileOptions.on('change', syncCompanyProfileActiveState);
+        $companyProfileOptions.on('change', updateNextStepButtonState);
 
         /**
          * Escuta clique no card visual para reforcar o estado selecionado
@@ -122,6 +132,7 @@
         });
 
         syncCompanyProfileActiveState();
+        updateNextStepButtonState();
     });
 </script>
 @endpush

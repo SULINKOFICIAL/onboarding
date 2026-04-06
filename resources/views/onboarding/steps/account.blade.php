@@ -25,17 +25,17 @@
 </div>
 <div class="mb-3">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="phone">Número</label>
-    <input class="form-control input-phone" id="phone" name="phone" value="{{ old('phone', $data['phone'] ?? '') }}" placeholder="(11) 99999-9999" required>
+    <input class="form-control" id="phone" name="phone" value="{{ old('phone', $data['phone'] ?? '') }}" placeholder="(11) 99999-9999" required>
 </div>
 <div class="mb-3 d-none" id="cpf-field">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="cpf">CPF</label>
-    <input class="form-control input-cpf" id="cpf" name="cpf" value="{{ old('cpf', $data['cpf'] ?? ($data['cif'] ?? '')) }}" placeholder="000.000.000-00" required>
+    <input class="form-control" id="cpf" name="cpf" value="{{ old('cpf', $data['cpf'] ?? ($data['cif'] ?? '')) }}" placeholder="000.000.000-00" required>
     <div id="cpf-error" class="invalid-feedback d-none">Informe um CPF valido.</div>
     <div id="cpf-exists-error" class="invalid-feedback d-none">Já existe uma conta associada com esse CPF no mi.Core. Utilize outro CPF para continuar</div>
 </div>
 <div class="mb-3" id="cnpj-field">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="cnpj">CNPJ</label>
-    <input class="form-control input-cnpj" id="cnpj" name="cnpj" value="{{ old('cnpj', $data['cnpj'] ?? '') }}" placeholder="00.000.000/0000-00" required>
+    <input class="form-control" id="cnpj" name="cnpj" value="{{ old('cnpj', $data['cnpj'] ?? '') }}" placeholder="00.000.000/0000-00" required>
     <div id="cnpj-exists-error" class="invalid-feedback d-none">Já existe uma conta associada com esse CNPJ no mi.Core. Utilize outro CNPJ para continuar</div>
 </div>
 <input
@@ -128,6 +128,7 @@
         const $fullNameError = $('#full-name-error');
         const $emailInput = $('#email');
         const $emailError = $('#email-error');
+        const $phoneInput = $('#phone');
         const $cpfInput = $('#cpf');
         const $cnpjInput = $('#cnpj');
         const $cpfError = $('#cpf-error');
@@ -153,6 +154,9 @@
         let checkedDocumentType = '';
         let checkedDocumentValue = '';
         let activeDocumentRequestId = 0;
+        let hasPhoneMaskApplied = false;
+        let hasCpfMaskApplied = false;
+        let hasCnpjMaskApplied = false;
 
         // Helpers / utilitarios
         /**
@@ -256,6 +260,54 @@
             return Object.keys(rulesStatus).every(function (ruleKey) {
                 return rulesStatus[ruleKey];
             });
+        }
+
+        /**
+         * Aplica mascara de telefone quando usuario foca no campo.
+         * Evita inicializacao global e preserva navegacao de teclado.
+         */
+        function applyPhoneMaskIfNeeded() {
+            if (hasPhoneMaskApplied || typeof Inputmask === 'undefined') {
+                return;
+            }
+
+            Inputmask(["(99) 9999-9999", "(99) 9 9999-9999"], {
+                clearIncomplete: true,
+            }).mask($phoneInput.get(0));
+
+            hasPhoneMaskApplied = true;
+        }
+
+        /**
+         * Aplica mascara de CPF assim que o campo recebe foco.
+         * Evita inicializacao global para manter foco e tab navegaveis.
+         */
+        function applyCpfMaskIfNeeded() {
+            if (hasCpfMaskApplied || typeof Inputmask === 'undefined') {
+                return;
+            }
+
+            Inputmask(["999.999.999-99"], {
+                clearIncomplete: true,
+            }).mask($cpfInput.get(0));
+
+            hasCpfMaskApplied = true;
+        }
+
+        /**
+         * Aplica mascara de CNPJ assim que o campo recebe foco.
+         * Evita inicializacao global para manter foco e tab navegaveis.
+         */
+        function applyCnpjMaskIfNeeded() {
+            if (hasCnpjMaskApplied || typeof Inputmask === 'undefined') {
+                return;
+            }
+
+            Inputmask(["99.999.999/9999-99"], {
+                clearIncomplete: true,
+            }).mask($cnpjInput.get(0));
+
+            hasCnpjMaskApplied = true;
         }
 
         // Funcoes de renderizacao / UI
@@ -419,18 +471,16 @@
         function fillTestDataStep() {
             $('#full_name').val('Usuario Teste');
             $('#email').val('teste+onboarding@micore.com');
+            applyPhoneMaskIfNeeded();
             $('#phone').val('11999999999');
             $('#no_cnpj').prop('checked', false).trigger('change');
+            applyCnpjMaskIfNeeded();
             $('#cnpj').val('12345678000199');
             $('#password').val('Senha@12345');
             $('#has_coupon').prop('checked', true).trigger('change');
             $('#coupon_code').val('BEMVINDO10');
             $('#tips_whatsapp').prop('checked', true);
             $('#tips_email').prop('checked', true);
-
-            if (typeof generateMasks === 'function') {
-                generateMasks();
-            }
 
             updateNextStepButtonState();
         }
@@ -853,6 +903,7 @@
          * Escuta digitacao no CPF para validar apenas quando houver 11 digitos
          * e evitar feedback de erro prematuro durante o preenchimento.
          */
+        $cpfInput.on('focus', applyCpfMaskIfNeeded);
         $cpfInput.on('input', function () {
             hasInteractedWithCpf = true;
             resetDocumentAvailabilityState();
@@ -904,6 +955,7 @@
          * Escuta alteracoes no CNPJ para invalidar consulta anterior
          * e garantir verificação com o valor final digitado no campo.
          */
+        $cnpjInput.on('focus', applyCnpjMaskIfNeeded);
         $cnpjInput.on('input', function () {
             hasInteractedWithCnpj = true;
             resetDocumentAvailabilityState();
@@ -974,11 +1026,11 @@
         $noCnpjCheckbox.on('change', hideCpfError);
         $noCnpjCheckbox.on('change', updateNextStepButtonState);
         $hasCouponCheckbox.on('change', updateNextStepButtonState);
-        $('#phone').on('input blur', updateNextStepButtonState);
-
-        if (typeof generateMasks === 'function') {
-            generateMasks();
-        }
+        $phoneInput.on('focus', applyPhoneMaskIfNeeded);
+        $phoneInput.on('input', function () {
+            updateNextStepButtonState();
+        });
+        $phoneInput.on('blur', updateNextStepButtonState);
 
         window.validateAccountStep = validateAccountStep;
 
