@@ -14,6 +14,7 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertRedirect(route('onboarding.step', ['step' => 1]));
+        $response->assertStatus(200);
+        $response->assertSee('Criando seu sistema');
     }
 }

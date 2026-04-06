@@ -232,7 +232,7 @@ class OnboardingController extends Controller
 
         if ($token === '') {
             Log::warning($logMessage, array_merge($logContext, [
-                'error' => 'Token da central não configurado em CORE_BUSINESS_TOKEN.',
+                'error' => 'Token da central não configurado em CENTRAL_TOKEN.',
             ]));
             return $this->makeCheckResponse(false, false);
         }
@@ -271,7 +271,7 @@ class OnboardingController extends Controller
 
         if ($token === '') {
             Log::warning($logMessage, array_merge($logContext, [
-                'error' => 'Token da central não configurado em CORE_BUSINESS_TOKEN.',
+                'error' => 'Token da central não configurado em CENTRAL_TOKEN.',
             ]));
 
             return response()->json([
