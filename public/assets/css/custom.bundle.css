@@ -44,6 +44,12 @@ body {
     color: #ffffff !important;
 }
 
+.btn-success-mc.active i,
+.btn-success-mc:hover i,
+.btn-check:checked + .btn-success-mc i {
+    color: #ffffff !important;
+}
+
 .btn-success-mc.active .fs-6,
 .btn-success-mc:hover .fs-6,
 .btn-check:checked + .btn-success-mc .fs-6 {
