@@ -13,7 +13,7 @@
 
 <div class="mb-3">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="full_name">Nome</label>
-    <input class="form-control" id="full_name" name="full_name" value="{{ old('full_name', $data['full_name'] ?? '') }}" placeholder="Digite seu nome completo" required>
+    <input class="form-control" id="full_name" name="full_name" value="{{ old('full_name', $data['full_name'] ?? '') }}" placeholder="Como deseja que chamemos você?" required>
     <div id="full-name-error" class="invalid-feedback d-none">Informe nome e sobrenome.</div>
 </div>
 <div class="mb-3">
@@ -24,7 +24,7 @@
     </div>
 </div>
 <div class="mb-3">
-    <label class="form-label text-gray-700 fw-bolder mb-0" for="phone">Numero</label>
+    <label class="form-label text-gray-700 fw-bolder mb-0" for="phone">Número</label>
     <input class="form-control input-phone" id="phone" name="phone" value="{{ old('phone', $data['phone'] ?? '') }}" placeholder="(11) 99999-9999" required>
 </div>
 <div class="mb-3 d-none" id="cpf-field">
@@ -50,7 +50,17 @@
 </div>
 <div class="mb-3">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="password">Senha</label>
-    <input class="form-control" id="password" type="password" name="password" value="{{ old('password', $data['password'] ?? '') }}" placeholder="Crie uma senha" minlength="8" maxlength="32" required>
+    <div class="position-relative">
+        <input class="form-control pe-12" id="password" type="password" name="password" value="{{ old('password', $data['password'] ?? '') }}" placeholder="Crie uma senha" minlength="8" maxlength="32" required>
+        <button
+            id="toggle-password-visibility"
+            type="button"
+            class="btn btn-sm btn-icon position-absolute top-50 end-0 translate-middle-y me-9 border-0 bg-transparent text-muted"
+            aria-label="Mostrar ou ocultar senha"
+        >
+            <i id="toggle-password-icon" class="fa-regular fa-eye fs-5"></i>
+        </button>
+    </div>
     <div id="password-rules" class="d-none mt-3">
         <div class="small text-muted mb-2">Sua senha precisa conter:</div>
         <ul class="list-unstyled mb-0 small" id="password-rules-list">
@@ -124,6 +134,8 @@
         const $cpfExistsError = $('#cpf-exists-error');
         const $cnpjExistsError = $('#cnpj-exists-error');
         const $passwordInput = $('#password');
+        const $passwordToggleButton = $('#toggle-password-visibility');
+        const $passwordToggleIcon = $('#toggle-password-icon');
         const $passwordRules = $('#password-rules');
         const $passwordRulesList = $('#password-rules-list');
         const $documentTypeInput = $('#document_type');
@@ -944,6 +956,18 @@
         });
 
         /**
+         * Escuta clique no icone de olho para alternar visibilidade da senha.
+         * Mantem feedback visual do proprio icone conforme estado atual.
+         */
+        $passwordToggleButton.on('click', function () {
+            const shouldShowPassword = $passwordInput.attr('type') === 'password';
+            $passwordInput.attr('type', shouldShowPassword ? 'text' : 'password');
+            $passwordToggleIcon
+                .toggleClass('fa-eye', !shouldShowPassword)
+                .toggleClass('fa-eye-slash', shouldShowPassword);
+        });
+
+        /**
          * Escuta mudanca no checkbox de CNPJ para limpar erro residual do CPF
          * quando o usuario alterna rapidamente entre os tipos de documento.
          */
@@ -971,15 +995,21 @@
     <p class="form-label text-gray-700 fw-bolder mb-1">Receber dicas</p>
     <div class="d-flex gap-4">
         <div class="form-check">
-            <input class="form-check-input" id="tips_whatsapp" type="checkbox" name="tips_whatsapp" value="1" @checked(old('tips_whatsapp', $data['tips_whatsapp'] ?? false))>
+            <input class="form-check-input" id="tips_whatsapp" type="checkbox" name="tips_whatsapp" value="1" @checked(old('tips_whatsapp', $data['tips_whatsapp'] ?? true))>
             <label class="form-check-label" for="tips_whatsapp">Receber por WhatsApp</label>
         </div>
         <div class="form-check">
-            <input class="form-check-input" id="tips_email" type="checkbox" name="tips_email" value="1" @checked(old('tips_email', $data['tips_email'] ?? false))>
+            <input class="form-check-input" id="tips_email" type="checkbox" name="tips_email" value="1" @checked(old('tips_email', $data['tips_email'] ?? true))>
             <label class="form-check-label" for="tips_email">Receber por e-mail</label>
         </div>
     </div>
-    <p class="text-muted small mt-3 mb-0">
+    <p class="text-muted small mt-6 mb-0">
+        Ao utilizar o sistema, voce concorda com nossos
+        <a class="text-muted text-decoration-underline fw-bold" href="http://micore.com.br/termos-de-uso" target="_blank" rel="noopener noreferrer">Termos de Uso</a>
+        e
+        <a class="text-muted text-decoration-underline fw-bold" href="http://micore.com.br/termos-de-uso" target="_blank" rel="noopener noreferrer">Politica de Privacidade</a>.
+    </p>
+    <p class="text-muted small mb-0">
         Este site e protegido por reCAPTCHA. A Politica de Privacidade e os Termos de Uso do Google se aplicam.
     </p>
 </div>
