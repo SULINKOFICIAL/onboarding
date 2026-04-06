@@ -1,5 +1,5 @@
 <div class="mb-3">
-    <span class="badge badge-success">30 dias gratuitos</span>
+    <span class="badge badge-success onboarding-trial-badge">30 dias gratuitos</span>
 </div>
 <div class="d-flex gap-2 mb-3" aria-label="Progresso do onboarding">
     <div class="flex-fill rounded-pill h-10px bg-primary"></div>
@@ -7,14 +7,20 @@
     <div class="flex-fill rounded-pill h-10px bg-gray-200"></div>
 </div>
 
-<h1 class="fs-2x fw-bolder mt-6 mb-10 me-md-13">
-    Conte pra gente o perfil da sua empresa para personalizarmos sua experiência.
-</h1>
+<div class="mb-10 me-md-13">
+    <h1 class="fs-2x fw-bolder mt-6">
+        Conte pra gente o perfil da sua empresa para personalizarmos sua experiência.
+    </h1>
+
+    <p class="text-gray-600">
+        Conte pra gente o perfil da sua empresa para personalizarmos sua experiência.
+    </p>
+</div>
 
 <div class="mb-12">
-    <p class="form-label text-gray-700 fw-bolder mb-0">Qual o perfil da empresa?</p>
+    <p class="form-label text-gray-700 fw-bolder mb-2">Qual o perfil da empresa?</p>
 
-    <div class="row g-4 mt-1">
+    <div class="row g-4">
         <div class="col-12 col-lg-6">
             <input class="btn-check" id="profile_lucro_presumido" type="radio" name="company_profile" value="lucro_presumido" autocomplete="off" @checked(old('company_profile', $data['company_profile'] ?? '') === 'lucro_presumido')>
             <label class="btn bg-gray-200 btn-success-mc rounded-4 p-6 text-start w-100 h-100 d-flex flex-column justify-content-center align-items-start" for="profile_lucro_presumido">

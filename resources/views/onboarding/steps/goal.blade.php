@@ -1,5 +1,5 @@
 <div class="mb-3">
-    <span class="badge badge-success">30 dias gratuitos</span>
+    <span class="badge badge-success onboarding-trial-badge">30 dias gratuitos</span>
 </div>
 <div class="d-flex gap-2 mb-3" aria-label="Progresso do onboarding">
     <div class="flex-fill rounded-pill h-10px bg-primary"></div>

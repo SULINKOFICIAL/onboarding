@@ -16,6 +16,12 @@ body {
     cursor: pointer;
 }
 
+.onboarding-trial-badge {
+    font-size: 13px !important;
+    padding: 7px 19px;
+    border-radius: 30px;
+}
+
 .btn-success-mc.active,
 .btn-check:checked + .btn-success-mc {
     background-color: var(--bs-success) !important;
