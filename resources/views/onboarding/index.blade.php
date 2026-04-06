@@ -34,7 +34,11 @@
                 </div>
             </div>
 
-            <div class="col-12 col-lg-6 d-flex align-items-end p-4 p-lg-8 justify-content-center position-relative overflow-hidden" style="background: url('{{ asset('assets/media/bg-big.jpg') }}') no-repeat center center; background-size: cover;">
+            <div
+                id="onboarding-side-panel"
+                class="col-12 col-lg-6 d-flex align-items-end p-4 p-lg-8 justify-content-center position-relative overflow-hidden"
+                style="background: url('{{ asset('assets/media/bg-big.jpg') }}') no-repeat center center; background-size: cover;"
+            >
                 <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(0deg, #131924f2 20%, #1d253438 80%);"></div>
 
                 <div class="z-index-2 w-100 mw-600px">
@@ -63,6 +67,9 @@
             const stepOrder = ['account', 'company', 'goal', 'address'];
             const $form = $('form');
             const $finalizingMessage = $('#onboarding-finalizing-message');
+            const $sidePanel = $('#onboarding-side-panel');
+            const defaultBackgroundImage = '{{ asset('assets/media/bg-big.jpg') }}';
+            const addressBackgroundImage = '{{ asset('assets/media/bg-finish.jpg') }}';
             let currentStep = 'account';
             let isFinishing = false;
 
@@ -211,17 +218,17 @@
              * Executa validacoes do step atual antes de permitir a navegacao.
              * Evita avancar para o proximo step quando ha erro local.
              */
-            function canProceedFromCurrentStep(direction) {
+            function canProceedFromCurrentStep(stepName, direction) {
                 if (direction !== 'next') {
                     return true;
                 }
 
-                if (!validateRequiredFieldsByStep(currentStep)) {
+                if (!validateRequiredFieldsByStep(stepName)) {
                     return false;
                 }
 
                 // Mantem compatibilidade com validacao isolada no step account.
-                if (currentStep !== 'account' || typeof window.validateAccountStep !== 'function') {
+                if (stepName !== 'account' || typeof window.validateAccountStep !== 'function') {
                     return true;
                 }
 
@@ -230,15 +237,34 @@
 
             // Funcoes de renderizacao / UI
             /**
+             * Retorna o step atualmente visivel no DOM.
+             * Evita dessicronia entre estado em memoria e interface.
+             */
+            function getVisibleStepName() {
+                const visibleStep = $('.onboarding-step:visible').first().data('step');
+                return visibleStep || currentStep;
+            }
+
+            /**
              * Exibe apenas o step informado e oculta os demais no formulario.
              * Garante que todos os steps permanecam montados no DOM.
              */
             function showStep(stepName) {
                 $('.onboarding-step').hide();
                 $(`.onboarding-step[data-step="${stepName}"]`).show();
+                updateSidePanelBackground(stepName);
                 if (stepName !== 'address') {
                     $finalizingMessage.stop(true, true).hide();
                 }
+            }
+
+            /**
+             * Atualiza imagem lateral conforme etapa visivel do onboarding.
+             * Usa imagem de finalizacao apenas na etapa de endereco.
+             */
+            function updateSidePanelBackground(stepName) {
+                const backgroundImage = stepName === 'address' ? addressBackgroundImage : defaultBackgroundImage;
+                $sidePanel.css('background-image', `url('${backgroundImage}')`);
             }
 
             /**
@@ -250,25 +276,27 @@
             }
 
             /**
+             * Finaliza fluxo do onboarding com feedback visual na tela.
+             * Esta acao deve ocorrer apenas no botao final da etapa CEP.
+             */
+            function finalizeOnboardingFlow() {
+                isFinishing = true;
+                showFinalizingMessage();
+
+                // Aguarda o feedback visual antes de reiniciar o fluxo.
+                setTimeout(function () {
+                    currentStep = 'account';
+                    showStep(currentStep);
+                    isFinishing = false;
+                }, 1600);
+            }
+
+            /**
              * Move o fluxo para o step alvo considerando regras de navegacao.
              * Reinicia no primeiro step ao finalizar o ultimo.
              */
-            function navigateSteps(direction) {
-                if (direction === 'next' && currentStep === 'address') {
-                    isFinishing = true;
-                    showFinalizingMessage();
-
-                    // Aguarda o feedback visual antes de reiniciar o fluxo.
-                    setTimeout(function () {
-                        currentStep = 'account';
-                        showStep(currentStep);
-                        isFinishing = false;
-                    }, 1600);
-
-                    return;
-                }
-
-                currentStep = getAdjacentStep(currentStep, direction);
+            function navigateSteps(stepName, direction) {
+                currentStep = getAdjacentStep(stepName, direction);
                 showStep(currentStep);
             }
 
@@ -284,12 +312,20 @@
                     return;
                 }
 
+                const clickedStepName = $(this).closest('.onboarding-step').data('step') || getVisibleStepName();
+                const isAddressFinishButton =
+                    clickedStepName === 'address' && $(this).is('#onboarding-finish-button');
                 const direction = $(this).val();
-                if (!canProceedFromCurrentStep(direction)) {
+                if (!canProceedFromCurrentStep(clickedStepName, direction)) {
                     return;
                 }
 
-                navigateSteps(direction);
+                if (isAddressFinishButton && direction === 'next') {
+                    finalizeOnboardingFlow();
+                    return;
+                }
+
+                navigateSteps(clickedStepName, direction);
             });
 
             /**
