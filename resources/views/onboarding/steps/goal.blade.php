@@ -16,7 +16,7 @@
 
     <div class="row g-4 mt-1">
         <div class="col-12 col-lg-6">
-            <input class="btn-check" id="goal_centralizar_atendimentos" type="radio" name="main_goal" value="centralizar_atendimentos" autocomplete="off" @checked(old('main_goal', $data['main_goal'] ?? '') === 'centralizar_atendimentos')>
+            <input class="btn-check" id="goal_centralizar_atendimentos" type="checkbox" name="main_goals[]" value="centralizar_atendimentos" autocomplete="off" required @checked(in_array('centralizar_atendimentos', old('main_goals', $data['main_goals'] ?? []), true))>
             <label class="btn bg-gray-200 btn-success-mc rounded-4 p-6 text-start w-100 h-100 d-flex justify-content-between align-items-start gap-4" for="goal_centralizar_atendimentos">
                 <span class="d-flex flex-column">
                     <span class="fs-4 fw-bold text-gray-800 mb-1">Centralizar Atendimentos</span>
@@ -27,7 +27,7 @@
         </div>
 
         <div class="col-12 col-lg-6">
-            <input class="btn-check" id="goal_vender_online" type="radio" name="main_goal" value="vender_online" autocomplete="off" @checked(old('main_goal', $data['main_goal'] ?? '') === 'vender_online')>
+            <input class="btn-check" id="goal_vender_online" type="checkbox" name="main_goals[]" value="vender_online" autocomplete="off" required @checked(in_array('vender_online', old('main_goals', $data['main_goals'] ?? []), true))>
             <label class="btn bg-gray-200 btn-success-mc rounded-4 p-6 text-start w-100 h-100 d-flex justify-content-between align-items-start gap-4" for="goal_vender_online">
                 <span class="d-flex flex-column">
                     <span class="fs-4 fw-bold text-gray-800 mb-1">Vender Online</span>
@@ -38,7 +38,7 @@
         </div>
 
         <div class="col-12 col-lg-6">
-            <input class="btn-check" id="goal_controlar_estoque" type="radio" name="main_goal" value="controlar_estoque" autocomplete="off" @checked(old('main_goal', $data['main_goal'] ?? '') === 'controlar_estoque')>
+            <input class="btn-check" id="goal_controlar_estoque" type="checkbox" name="main_goals[]" value="controlar_estoque" autocomplete="off" required @checked(in_array('controlar_estoque', old('main_goals', $data['main_goals'] ?? []), true))>
             <label class="btn bg-gray-200 btn-success-mc rounded-4 p-6 text-start w-100 h-100 d-flex justify-content-between align-items-start gap-4" for="goal_controlar_estoque">
                 <span class="d-flex flex-column">
                     <span class="fs-4 fw-bold text-gray-800 mb-1">Controlar Estoque</span>
@@ -49,7 +49,7 @@
         </div>
 
         <div class="col-12 col-lg-6">
-            <input class="btn-check" id="goal_vender_servicos" type="radio" name="main_goal" value="vender_servicos" autocomplete="off" @checked(old('main_goal', $data['main_goal'] ?? '') === 'vender_servicos')>
+            <input class="btn-check" id="goal_vender_servicos" type="checkbox" name="main_goals[]" value="vender_servicos" autocomplete="off" required @checked(in_array('vender_servicos', old('main_goals', $data['main_goals'] ?? []), true))>
             <label class="btn bg-gray-200 btn-success-mc rounded-4 p-6 text-start w-100 h-100 d-flex justify-content-between align-items-start gap-4" for="goal_vender_servicos">
                 <span class="d-flex flex-column">
                     <span class="fs-4 fw-bold text-gray-800 mb-1">Vender Servicos</span>
@@ -78,7 +78,7 @@
 <script>
     $(function () {
         // Estado global
-        const $goalOptions = $('input[name="main_goal"]');
+        const $goalOptions = $('input[name="main_goals[]"]');
         const $goalCards = $('.btn-success-mc');
         const $fillTestDataGoalButton = $('#fill-test-data-goal');
 
@@ -111,12 +111,11 @@
         $goalOptions.on('change', syncGoalActiveState);
 
         /**
-         * Escuta clique no card visual para reforcar destaque imediato
-         * mesmo antes da propagacao completa do estado do radio.
+         * Escuta clique no card visual para manter sincronia visual
+         * com o estado de checkbox após a atualizacao do input.
          */
         $goalCards.on('click', function () {
-            clearGoalActiveState();
-            $(this).addClass('active');
+            setTimeout(syncGoalActiveState, 0);
         });
 
         /**
@@ -124,7 +123,7 @@
          * e acelerar testes de navegacao no fluxo de onboarding.
          */
         $fillTestDataGoalButton.on('click', function () {
-            $('input[name="main_goal"][value="vender_online"]').prop('checked', true).trigger('change');
+            $('input[name="main_goals[]"][value="vender_online"]').prop('checked', true).trigger('change');
         });
 
         syncGoalActiveState();

@@ -12,6 +12,8 @@
             value="{{ old('company_zip_code', $data['company_zip_code'] ?? '') }}"
             maxlength="9"
             placeholder="00000-000"
+            pattern="\d{5}-\d{3}"
+            required
         >
         <div id="zip-code-loading" class="position-absolute top-50 translate-middle-y end-0 me-4 d-none">
             <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
@@ -28,6 +30,7 @@
             name="company_city_state"
             value="{{ old('company_city_state', $data['company_city_state'] ?? '') }}"
             placeholder="Cidade - UF"
+            required
         >
     </div>
     <div class="mb-3">
@@ -38,6 +41,7 @@
             name="company_address"
             value="{{ old('company_address', $data['company_address'] ?? '') }}"
             placeholder="Rua, avenida, etc."
+            required
         >
     </div>
     <div class="row g-3 mb-3">
@@ -49,6 +53,7 @@
                 name="company_neighborhood"
                 value="{{ old('company_neighborhood', $data['company_neighborhood'] ?? '') }}"
                 placeholder="Nome do bairro"
+                required
             >
         </div>
         <div class="col-md-4">
@@ -59,6 +64,7 @@
                 name="company_number"
                 value="{{ old('company_number', $data['company_number'] ?? '') }}"
                 placeholder="Nº"
+                required
             >
         </div>
     </div>

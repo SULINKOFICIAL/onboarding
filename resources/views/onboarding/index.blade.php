@@ -86,16 +86,142 @@
             }
 
             /**
+             * Busca campos obrigatorios visiveis e habilitados do step atual.
+             * Evita validar inputs de outras etapas que estao ocultas.
+             */
+            function getRequiredVisibleFields(stepName) {
+                return $(`.onboarding-step[data-step="${stepName}"]`)
+                    .find(':input[required]')
+                    .filter(':enabled')
+                    .filter(function () {
+                        if ($(this).is(':radio') || $(this).is(':checkbox')) {
+                            return true;
+                        }
+
+                        return $(this).is(':visible');
+                    });
+            }
+
+            /**
+             * Valida grupo de radios obrigatorios para garantir uma selecao.
+             * Usa reportValidity para manter mensagem nativa do navegador.
+             */
+            function validateRequiredRadioGroup($requiredFields, radioName) {
+                const $radioGroup = $requiredFields.filter(`[name="${radioName}"]`);
+                if (!$radioGroup.length) {
+                    return true;
+                }
+
+                const hasCheckedRadio = $radioGroup.is(':checked');
+                $radioGroup.each(function () {
+                    this.setCustomValidity('');
+                });
+
+                if (hasCheckedRadio) {
+                    return true;
+                }
+
+                // Define mensagem no primeiro radio visivel para feedback imediato.
+                const firstRadio = $radioGroup.get(0);
+                firstRadio.setCustomValidity('Selecione uma opcao para continuar.');
+                firstRadio.reportValidity();
+                firstRadio.setCustomValidity('');
+
+                return false;
+            }
+
+            /**
+             * Valida grupo de checkboxes obrigatorios exigindo uma selecao.
+             * Usa reportValidity para manter feedback nativo no navegador.
+             */
+            function validateRequiredCheckboxGroup($requiredFields, checkboxName) {
+                const $checkboxGroup = $requiredFields.filter(`[name="${checkboxName}"]`);
+                if (!$checkboxGroup.length) {
+                    return true;
+                }
+
+                const hasCheckedCheckbox = $checkboxGroup.is(':checked');
+                $checkboxGroup.each(function () {
+                    this.setCustomValidity('');
+                });
+
+                if (hasCheckedCheckbox) {
+                    return true;
+                }
+
+                const firstCheckbox = $checkboxGroup.get(0);
+                firstCheckbox.setCustomValidity('Selecione ao menos uma opcao para continuar.');
+                firstCheckbox.reportValidity();
+                firstCheckbox.setCustomValidity('');
+
+                return false;
+            }
+
+            /**
+             * Valida campos obrigatorios da etapa atual respeitando visibilidade.
+             * Interrompe a navegacao no primeiro campo invalido encontrado.
+             */
+            function validateRequiredFieldsByStep(stepName) {
+                const $requiredFields = getRequiredVisibleFields(stepName);
+                const processedRadioNames = {};
+                const processedCheckboxNames = {};
+                let isStepValid = true;
+
+                $requiredFields.each(function () {
+                    if (!isStepValid) {
+                        return false;
+                    }
+
+                    const $field = $(this);
+                    if ($field.is(':radio')) {
+                        const radioName = $field.attr('name');
+                        if (!radioName || processedRadioNames[radioName]) {
+                            return true;
+                        }
+
+                        processedRadioNames[radioName] = true;
+                        isStepValid = validateRequiredRadioGroup($requiredFields, radioName);
+                        return isStepValid;
+                    }
+
+                    if ($field.is(':checkbox')) {
+                        const checkboxName = $field.attr('name');
+                        if (!checkboxName || processedCheckboxNames[checkboxName]) {
+                            return true;
+                        }
+
+                        processedCheckboxNames[checkboxName] = true;
+                        isStepValid = validateRequiredCheckboxGroup($requiredFields, checkboxName);
+                        return isStepValid;
+                    }
+
+                    if (!this.checkValidity()) {
+                        this.reportValidity();
+                        isStepValid = false;
+                        return false;
+                    }
+
+                    return true;
+                });
+
+                return isStepValid;
+            }
+
+            /**
              * Executa validacoes do step atual antes de permitir a navegacao.
              * Evita avancar para o proximo step quando ha erro local.
              */
             function canProceedFromCurrentStep(direction) {
-                if (direction !== 'next' || currentStep !== 'account') {
+                if (direction !== 'next') {
                     return true;
                 }
 
+                if (!validateRequiredFieldsByStep(currentStep)) {
+                    return false;
+                }
+
                 // Mantem compatibilidade com validacao isolada no step account.
-                if (typeof window.validateAccountStep !== 'function') {
+                if (currentStep !== 'account' || typeof window.validateAccountStep !== 'function') {
                     return true;
                 }
 

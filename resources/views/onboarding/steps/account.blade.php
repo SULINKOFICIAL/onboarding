@@ -13,32 +13,38 @@
 
 <div class="mb-3">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="full_name">Nome</label>
-    <input class="form-control" id="full_name" name="full_name" value="{{ old('full_name', $data['full_name'] ?? '') }}" placeholder="Digite seu nome completo">
+    <input class="form-control" id="full_name" name="full_name" value="{{ old('full_name', $data['full_name'] ?? '') }}" placeholder="Digite seu nome completo" required>
 </div>
 <div class="mb-3">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="email">E-mail</label>
-    <input class="form-control" id="email" type="email" name="email" value="{{ old('email', $data['email'] ?? '') }}" placeholder="voce@empresa.com">
+    <input class="form-control" id="email" type="email" name="email" value="{{ old('email', $data['email'] ?? '') }}" placeholder="voce@empresa.com" required>
 </div>
 <div class="mb-3">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="phone">Numero</label>
-    <input class="form-control input-phone" id="phone" name="phone" value="{{ old('phone', $data['phone'] ?? '') }}" placeholder="(11) 99999-9999">
+    <input class="form-control input-phone" id="phone" name="phone" value="{{ old('phone', $data['phone'] ?? '') }}" placeholder="(11) 99999-9999" required>
 </div>
 <div class="mb-3 d-none" id="cpf-field">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="cpf">CPF</label>
-    <input class="form-control input-cpf" id="cpf" name="cpf" value="{{ old('cpf', $data['cpf'] ?? ($data['cif'] ?? '')) }}" placeholder="000.000.000-00">
+    <input class="form-control input-cpf" id="cpf" name="cpf" value="{{ old('cpf', $data['cpf'] ?? ($data['cif'] ?? '')) }}" placeholder="000.000.000-00" required>
     <div id="cpf-error" class="invalid-feedback d-none">Informe um CPF valido.</div>
 </div>
 <div class="mb-3" id="cnpj-field">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="cnpj">CNPJ</label>
-    <input class="form-control input-cnpj" id="cnpj" name="cnpj" value="{{ old('cnpj', $data['cnpj'] ?? '') }}" placeholder="00.000.000/0000-00">
+    <input class="form-control input-cnpj" id="cnpj" name="cnpj" value="{{ old('cnpj', $data['cnpj'] ?? '') }}" placeholder="00.000.000/0000-00" required>
 </div>
+<input
+    type="hidden"
+    id="document_type"
+    name="document_type"
+    value="{{ old('document_type', $data['document_type'] ?? ((old('no_cnpj', $data['no_cnpj'] ?? false)) ? 'cpf' : 'cnpj')) }}"
+>
 <div class="form-check mb-3">
-    <input class="form-check-input" id="no_cnpj" type="checkbox" name="no_cnpj" value="1" @checked(old('no_cnpj', $data['no_cnpj'] ?? false))>
+    <input class="form-check-input" id="no_cnpj" type="checkbox" @checked(old('document_type', $data['document_type'] ?? ((old('no_cnpj', $data['no_cnpj'] ?? false)) ? 'cpf' : 'cnpj')) === 'cpf')>
     <label class="form-check-label" for="no_cnpj">Nao tenho CNPJ</label>
 </div>
 <div class="mb-3">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="password">Senha</label>
-    <input class="form-control" id="password" type="password" name="password" value="{{ old('password', $data['password'] ?? '') }}" placeholder="Crie uma senha">
+    <input class="form-control" id="password" type="password" name="password" value="{{ old('password', $data['password'] ?? '') }}" placeholder="Crie uma senha" required>
 </div>
 <div class="form-check mb-3">
     <input class="form-check-input" id="has_coupon" type="checkbox" name="has_coupon" value="1" @checked(old('has_coupon', $data['has_coupon'] ?? false))>
@@ -75,7 +81,9 @@
         const $couponField = $('#coupon-field');
         const $fillTestDataButton = $('#fill-test-data-account');
         const $cpfInput = $('#cpf');
+        const $cnpjInput = $('#cnpj');
         const $cpfError = $('#cpf-error');
+        const $documentTypeInput = $('#document_type');
 
         // Helpers / utilitarios
         /**
@@ -150,6 +158,9 @@
             const withoutCnpj = $noCnpjCheckbox.is(':checked');
             $cnpjField.toggleClass('d-none', withoutCnpj);
             $cpfField.toggleClass('d-none', !withoutCnpj);
+            $cnpjInput.prop('required', !withoutCnpj);
+            $cpfInput.prop('required', withoutCnpj);
+            $documentTypeInput.val(withoutCnpj ? 'cpf' : 'cnpj');
             if (!withoutCnpj) {
                 hideCpfError();
             }
