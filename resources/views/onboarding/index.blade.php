@@ -297,6 +297,10 @@
              * e executa a transicao de tela sem recarregar a pagina.
              */
             $form.on('click', 'button[name="navigation"]', function (event) {
+                if ($(this).is('#onboarding-finish-button')) {
+                    return;
+                }
+
                 event.preventDefault();
 
                 const clickedStepName = $(this).closest('.onboarding-step').data('step') || getVisibleStepName();
@@ -306,6 +310,22 @@
                 }
 
                 navigateSteps(clickedStepName, direction);
+            });
+
+            /**
+             * Escuta clique apenas no botao final do step de endereco.
+             * Mantem gatilho de finalizacao isolado do listener generico.
+             */
+            $form.on('click', '#onboarding-finish-button', function (event) {
+                event.preventDefault();
+
+                const clickedStepName = $(this).closest('.onboarding-step').data('step') || getVisibleStepName();
+                const direction = $(this).val();
+                if (!canProceedFromCurrentStep(clickedStepName, direction)) {
+                    return;
+                }
+
+                finalizeOnboardingFlow();
             });
 
             /**

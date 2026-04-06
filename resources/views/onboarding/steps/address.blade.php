@@ -82,7 +82,7 @@
 
 <div class="d-flex justify-content-between mt-4 gap-3">
     <button class="btn btn-light" type="submit" name="navigation" value="back" formnovalidate>Voltar</button>
-    <button id="onboarding-finish-button" class="btn btn-primary w-100" type="submit" name="navigation" value="next">Finalizar</button>
+    <button id="onboarding-finish-button" class="btn btn-primary w-100" type="submit" name="navigation" value="next" disabled>Finalizar</button>
 </div>
 
 <button
@@ -104,6 +104,7 @@
         const $companyAddressInput = $('#company_address');
         const $companyNeighborhoodInput = $('#company_neighborhood');
         const $fillTestDataAddressButton = $('#fill-test-data-address');
+        const $finishButton = $('#onboarding-finish-button');
 
         // Helpers / utilitarios
         /**
@@ -175,6 +176,36 @@
             $companyZipCodeInput.prop('readonly', isLoading);
         }
 
+        /**
+         * Valida apenas campos obrigatorios visiveis da etapa de endereco.
+         * Mantem complemento opcional fora da regra de bloqueio.
+         */
+        function hasValidRequiredAddressFields() {
+            const $requiredFields = $('.onboarding-step[data-step="address"]')
+                .find(':input[required]')
+                .filter(':enabled:visible');
+
+            let isValid = true;
+            $requiredFields.each(function () {
+                if (this.checkValidity()) {
+                    return true;
+                }
+
+                isValid = false;
+                return false;
+            });
+
+            return isValid;
+        }
+
+        /**
+         * Atualiza estado do botao finalizar conforme validacao do step.
+         * Libera clique apenas quando campos obrigatorios estiverem completos.
+         */
+        function updateFinishButtonState() {
+            $finishButton.prop('disabled', !hasValidRequiredAddressFields());
+        }
+
         // Event listeners
         /**
          * Escuta digitacao no campo de CEP, aplica mascara progressiva
@@ -186,6 +217,8 @@
             if (getZipCodeDigits(formattedZipCode).length === 8) {
                 showZipAddressFields();
             }
+
+            updateFinishButtonState();
         });
 
         /**
@@ -195,11 +228,13 @@
         $companyZipCodeInput.on('blur', function () {
             const zipCodeDigits = getZipCodeDigits($companyZipCodeInput.val() || '');
             if (zipCodeDigits.length !== 8) {
+                updateFinishButtonState();
                 return;
             }
 
             showZipAddressFields();
             lookupZipCode(zipCodeDigits);
+            updateFinishButtonState();
         });
 
         /**
@@ -214,7 +249,16 @@
             $companyNeighborhoodInput.val('Bela Vista');
             $('#company_number').val('1000');
             $('#company_complement').val('Conjunto 101');
+            updateFinishButtonState();
         });
+
+        /**
+         * Escuta alteracoes nos campos obrigatorios de endereco para habilitar
+         * o botao finalizar somente quando o preenchimento estiver completo.
+         */
+        $('#company_city_state, #company_address, #company_neighborhood, #company_number').on('input blur', updateFinishButtonState);
+
+        updateFinishButtonState();
     });
 </script>
 @endpush
