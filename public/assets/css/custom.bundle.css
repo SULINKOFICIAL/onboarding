@@ -55,3 +55,9 @@ body {
 .btn-check:checked + .btn-success-mc .fs-6 {
     opacity: 0.75;
 }
+
+.form-select:disabled, .form-control:read-only {
+    color: var(--bs-gray-500) !important;
+    background-color: var(--bs-gray-200) !important;
+    border-color: var(--bs-gray-300) !important;
+}

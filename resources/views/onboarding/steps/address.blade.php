@@ -193,7 +193,20 @@
             syncCityStateHiddenField();
             $companyAddressInput.val(payload.logradouro || '');
             $companyNeighborhoodInput.val(payload.bairro || '');
+            setZipResolvedFieldsLockState(true);
+            $('#company_number').trigger('focus');
             updateFinishButtonState();
+        }
+
+        /**
+         * Controla bloqueio dos campos preenchidos automaticamente pelo ViaCEP.
+         * Evita edição manual após resolução válida de CEP.
+         */
+        function setZipResolvedFieldsLockState(isLocked) {
+            $companyCityInput.prop('readonly', isLocked);
+            $companyAddressInput.prop('readonly', isLocked);
+            $companyNeighborhoodInput.prop('readonly', isLocked);
+            $companyStateInput.prop('disabled', isLocked);
         }
 
         /**
@@ -265,6 +278,8 @@
          * e libera campos de endereco ao atingir quantidade minima de digitos.
          */
         $companyZipCodeInput.on('input', function () {
+            setZipResolvedFieldsLockState(false);
+
             const formattedZipCode = formatZipCode($companyZipCodeInput.val() || '');
             $companyZipCodeInput.val(formattedZipCode);
             if (getZipCodeDigits(formattedZipCode).length === 8) {

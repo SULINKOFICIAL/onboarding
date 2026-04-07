@@ -2,26 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\CentralApiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class OnboardingController extends Controller
 {
     private const DEFAULT_STEP = 'account';
-    private const CHECK_IDENTITY_ENDPOINT = '/api/central/onboarding/verificar-identidade';
-    private const SAVE_STEP_ENDPOINT = '/api/central/onboarding/salvar-etapa';
-    private const FINALIZE_ENDPOINT = '/api/central/onboarding/finalizar';
-
     private const STEPS = [
         'account' => 'Account',
         'company' => 'Company',
         'goal' => 'Goal',
         'address' => 'Address',
     ];
+
+    public function __construct(
+        private readonly CentralApiService $centralApiService
+    ) {}
 
     /**
      * Exibe o formulário de onboarding com os dados salvos em sessão.
@@ -98,8 +98,7 @@ class OnboardingController extends Controller
         return $this->checkIdentityInCentral(
             ['email' => $payload['email']],
             'Falha ao consultar email na central durante onboarding.',
-            ['email' => $payload['email']],
-            true
+            ['email' => $payload['email']]
         );
     }
 
@@ -126,8 +125,7 @@ class OnboardingController extends Controller
             [
                 'document_type' => $documentType,
                 'document_value' => $documentValue,
-            ],
-            false
+            ]
         );
     }
 
@@ -138,7 +136,7 @@ class OnboardingController extends Controller
         ]);
 
         return $this->forwardOnboardingPayload(
-            self::SAVE_STEP_ENDPOINT,
+            'save',
             $request->except(['_token']),
             'Falha ao salvar etapa do onboarding na central.',
             [
@@ -150,7 +148,7 @@ class OnboardingController extends Controller
     public function finalize(Request $request): JsonResponse
     {
         return $this->forwardOnboardingPayload(
-            self::FINALIZE_ENDPOINT,
+            'finalize',
             $request->except(['_token']),
             'Falha ao finalizar onboarding na central.'
         );
@@ -223,14 +221,10 @@ class OnboardingController extends Controller
     private function checkIdentityInCentral(
         array $payload,
         string $logMessage,
-        array $logContext = [],
-        bool $useExistsField = false
+        array $logContext = []
     ): JsonResponse
     {
-        $endpoint = $this->getCheckIdentityEndpoint();
-        $token = $this->getCoreBusinessToken();
-
-        if ($token === '') {
+        if (!$this->centralApiService->hasConfiguredToken()) {
             Log::warning($logMessage, array_merge($logContext, [
                 'error' => 'Token da central não configurado em CENTRAL_TOKEN.',
             ]));
@@ -238,16 +232,13 @@ class OnboardingController extends Controller
         }
 
         try {
-            $response = Http::withToken($token)
-                ->acceptJson()
-                ->timeout(6)
-                ->post($endpoint, $payload);
+            $response = $this->centralApiService->checkOnboardingIdentity($payload);
 
             if ($response->successful()) {
                 $responseData = $response->json();
-                $exists = $useExistsField
-                    ? (bool) ($responseData['exists'] ?? false)
-                    : (bool) ($responseData['is_completed'] ?? false);
+                // No front, "exists" representa bloqueio de continuidade.
+                // A central define esse bloqueio com can_continue=false.
+                $exists = !(bool) ($responseData['can_continue'] ?? true);
 
                 return $this->makeCheckResponse($exists, true);
             }
@@ -261,15 +252,12 @@ class OnboardingController extends Controller
     }
 
     private function forwardOnboardingPayload(
-        string $endpointPath,
+        string $operation,
         array $payload,
         string $logMessage,
         array $logContext = []
     ): JsonResponse {
-        $endpoint = $this->buildCentralEndpoint($endpointPath);
-        $token = $this->getCoreBusinessToken();
-
-        if ($token === '') {
+        if (!$this->centralApiService->hasConfiguredToken()) {
             Log::warning($logMessage, array_merge($logContext, [
                 'error' => 'Token da central não configurado em CENTRAL_TOKEN.',
             ]));
@@ -281,10 +269,9 @@ class OnboardingController extends Controller
         }
 
         try {
-            $response = Http::withToken($token)
-                ->acceptJson()
-                ->timeout(6)
-                ->post($endpoint, $payload);
+            $response = $operation === 'finalize'
+                ? $this->centralApiService->finalizeOnboarding($payload)
+                : $this->centralApiService->saveOnboardingStep($payload);
 
             if ($response->successful()) {
                 return response()->json(array_merge(['success' => true], $response->json()));
@@ -304,30 +291,6 @@ class OnboardingController extends Controller
             'success' => false,
             'message' => 'Falha na integração com a central.',
         ], 500);
-    }
-
-    /**
-     * Monta URL completa do endpoint de busca de cliente na central.
-     * Usa configuração para facilitar troca de ambiente local/homologação.
-     */
-    private function getCheckIdentityEndpoint(): string
-    {
-        return $this->buildCentralEndpoint(self::CHECK_IDENTITY_ENDPOINT);
-    }
-
-    private function buildCentralEndpoint(string $endpointPath): string
-    {
-        $baseUrl = rtrim((string) config('services.core_business.url'), '/');
-        return $baseUrl . $endpointPath;
-    }
-
-    /**
-     * Obtém token da integração entre onboarding e central.
-     * Mantém leitura centralizada da configuração de autenticação.
-     */
-    private function getCoreBusinessToken(): string
-    {
-        return (string) config('services.core_business.token', '');
     }
 
     /**
