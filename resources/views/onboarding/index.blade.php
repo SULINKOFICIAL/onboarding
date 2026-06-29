@@ -347,7 +347,16 @@
              * Reaproveita payload da última etapa para garantir consistência final.
              */
             function finalizeStep(stepName) {
-                const payload = collectStepPayload(stepName);
+                const payload = Object.assign(
+                    {},
+                    collectStepPayload('account'),
+                    collectStepPayload('company'),
+                    collectStepPayload('goal'),
+                    collectStepPayload(stepName),
+                    {
+                        step: stepName,
+                    }
+                );
 
                 return $.ajax({
                     url: finalizeUrl,
