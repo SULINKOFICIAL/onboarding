@@ -272,9 +272,8 @@ class OnboardingController extends Controller
 
             if ($response->successful()) {
                 $responseData = $response->json();
-                // No front, "exists" representa bloqueio de continuidade.
-                // A central define esse bloqueio com can_continue=false.
-                $exists = !(bool) ($responseData['can_continue'] ?? true);
+                $canContinue = $responseData['can_continue'] ?? true;
+                $exists = $canContinue !== true;
 
                 return $this->makeCheckResponse($exists, true);
             }
@@ -313,10 +312,28 @@ class OnboardingController extends Controller
                 return response()->json(array_merge(['success' => true], $response->json()));
             }
 
-            return response()->json([
+            $responseData = $response->json();
+            if (!is_array($responseData)) {
+                $responseData = [];
+            }
+
+            $message = $responseData['message'] ?? 'Falha na integração com a central.';
+            if (!is_string($message)) {
+                $message = 'Falha na integração com a central.';
+            }
+
+            $errorPayload = [
                 'success' => false,
-                'message' => (string) ($response->json('message') ?? 'Falha na integração com a central.'),
-            ], $response->status());
+                'message' => $message,
+            ];
+
+            foreach (['error', 'provisioning', 'tenant_id', 'redirect_url'] as $responseKey) {
+                if (array_key_exists($responseKey, $responseData)) {
+                    $errorPayload[$responseKey] = $responseData[$responseKey];
+                }
+            }
+
+            return response()->json($errorPayload, $response->status());
         } catch (\Throwable $exception) {
             Log::warning($logMessage, array_merge($logContext, [
                 'error' => $exception->getMessage(),

@@ -405,6 +405,24 @@
             }
 
             /**
+             * Monta mensagem de erro preservando detalhes retornados pela central.
+             */
+            function buildRequestErrorMessage(xhr, fallbackMessage) {
+                const response = xhr.responseJSON || {};
+                let errorMessage = response.message || fallbackMessage;
+
+                if (response.error) {
+                    errorMessage += `\n\nDetalhe: ${response.error}`;
+                }
+
+                if (response.provisioning && response.provisioning.step) {
+                    errorMessage += `\nEtapa: ${response.provisioning.step}`;
+                }
+
+                return errorMessage;
+            }
+
+            /**
              * Move o fluxo para o step alvo considerando regras de navegacao.
              * Reinicia no primeiro step ao finalizar o ultimo.
              */
@@ -451,7 +469,7 @@
                         navigateSteps(clickedStepName, direction);
                     })
                     .fail(function (xhr) {
-                        const errorMessage = xhr.responseJSON?.message || 'Não foi possível salvar esta etapa agora.';
+                        const errorMessage = buildRequestErrorMessage(xhr, 'Não foi possível salvar esta etapa agora.');
                         alert(errorMessage);
                     })
                     .always(function () {
@@ -482,7 +500,7 @@
                         finalizeOnboardingFlow(response.redirect_url);
                     })
                     .fail(function (xhr) {
-                        const errorMessage = xhr.responseJSON?.message || 'Não foi possível finalizar o onboarding agora.';
+                        const errorMessage = buildRequestErrorMessage(xhr, 'Não foi possível finalizar o onboarding agora.');
                         alert(errorMessage);
                     })
                     .always(function () {
