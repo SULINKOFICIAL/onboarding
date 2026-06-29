@@ -8,5 +8,6 @@ Route::post('/',                [OnboardingController::class, 'submit'])->name('
 Route::get('/success',          [OnboardingController::class, 'success'])->name('onboarding.success');
 Route::get('/check-email',      [OnboardingController::class, 'checkEmail'])->name('onboarding.check-email');
 Route::get('/check-document',   [OnboardingController::class, 'checkDocument'])->name('onboarding.check-document');
+Route::get('/resolve-location', [OnboardingController::class, 'resolveLocation'])->name('onboarding.resolve-location');
 Route::post('/save-step',       [OnboardingController::class, 'saveStep'])->name('onboarding.save-step');
 Route::post('/finalize',        [OnboardingController::class, 'finalize'])->name('onboarding.finalize');

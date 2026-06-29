@@ -2,18 +2,6 @@
     Finalize seu cadastro com o endereco da empresa e comece a testar.
 </h1>
 
-@php
-    $companyCity = old('company_city', $data['company_city'] ?? '');
-    $companyState = old('company_state', $data['company_state'] ?? '');
-    $companyCityState = old('company_city_state', $data['company_city_state'] ?? '');
-
-    if ((!$companyCity || !$companyState) && $companyCityState) {
-        $cityStateParts = array_map('trim', explode('-', $companyCityState));
-        $companyCity = $companyCity ?: ($cityStateParts[0] ?? '');
-        $companyState = $companyState ?: ($cityStateParts[1] ?? '');
-    }
-@endphp
-
 <div class="mb-3">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="company_zip_code">Qual o CEP da empresa?</label>
     <div class="position-relative">
@@ -36,31 +24,32 @@
 <div id="zip-address-fields" class="{{ old('company_zip_code', $data['company_zip_code'] ?? '') ? '' : 'd-none' }}">
     <div class="row g-3 mb-3">
         <div class="col-md-8">
-            <label class="form-label text-gray-700 fw-bolder mb-0" for="company_city">Cidade</label>
+            <label class="form-label text-gray-700 fw-bolder mb-0" for="company_city_name">Cidade</label>
             <input
                 class="form-control"
-                id="company_city"
-                name="company_city"
-                value="{{ $companyCity }}"
+                id="company_city_name"
+                value="{{ old('company_city_name', $data['company_city_name'] ?? '') }}"
                 placeholder="Cidade"
                 required
             >
         </div>
         <div class="col-md-4">
-            <label class="form-label text-gray-700 fw-bolder mb-0" for="company_state">Estado</label>
-            <select class="form-select" id="company_state" name="company_state" required>
+            <label class="form-label text-gray-700 fw-bolder mb-0" for="company_state_id">Estado</label>
+            <select class="form-select" id="company_state_id" name="company_state_id" required>
                 <option value="">Selecione</option>
-                @foreach ([
-                    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS',
-                    'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC',
-                    'SP', 'SE', 'TO',
-                ] as $stateOption)
-                    <option value="{{ $stateOption }}" @selected($companyState === $stateOption)>{{ $stateOption }}</option>
+                @foreach ($states as $state)
+                    <option
+                        value="{{ $state->id }}"
+                        data-acronym="{{ $state->acronym }}"
+                        @selected((string) old('company_state_id', $data['company_state_id'] ?? '') === (string) $state->id)
+                    >
+                        {{ $state->acronym }}
+                    </option>
                 @endforeach
             </select>
         </div>
     </div>
-    <input type="hidden" id="company_city_state" name="company_city_state" value="{{ $companyCityState }}">
+    <input type="hidden" id="company_city_id" name="company_city_id" value="{{ old('company_city_id', $data['company_city_id'] ?? '') }}">
     <div class="mb-3">
         <label class="form-label text-gray-700 fw-bolder mb-0" for="company_address">Endereco</label>
         <input
@@ -125,17 +114,19 @@
 <script>
     $(function () {
         // Estado global
+        const resolveLocationUrl = '{{ route('onboarding.resolve-location') }}';
         const $companyZipCodeInput = $('#company_zip_code');
         const $zipCodeLoading = $('#zip-code-loading');
         const $zipAddressFields = $('#zip-address-fields');
-        const $companyCityInput = $('#company_city');
-        const $companyStateInput = $('#company_state');
-        const $companyCityStateInput = $('#company_city_state');
+        const $companyCityInput = $('#company_city_name');
+        const $companyStateInput = $('#company_state_id');
+        const $companyCityIdInput = $('#company_city_id');
         const $companyAddressInput = $('#company_address');
         const $companyNeighborhoodInput = $('#company_neighborhood');
         const $fillTestDataAddressButton = $('#fill-test-data-address');
         const $finishButton = $('#onboarding-finish-button');
         const $addressStep = $('.onboarding-step[data-step="address"]');
+        let activeLocationRequestId = 0;
 
         // Helpers / utilitarios
         /**
@@ -169,18 +160,86 @@
         }
 
         /**
-         * Sincroniza campo oculto esperado pelo backend com cidade e estado.
-         * Mantem compatibilidade sem perder separacao visual dos campos.
+         * Seleciona estado local pelo acronym retornado no ViaCEP.
          */
-        function syncCityStateHiddenField() {
-            const city = ($companyCityInput.val() || '').trim();
-            const state = ($companyStateInput.val() || '').trim().toUpperCase();
-            if (state !== $companyStateInput.val()) {
-                $companyStateInput.val(state);
+        function selectCompanyStateByAcronym(stateAcronym) {
+            const normalizedAcronym = (stateAcronym || '').trim().toUpperCase();
+            const $stateOption = $companyStateInput
+                .find('option')
+                .filter(function () {
+                    return ($(this).data('acronym') || '') === normalizedAcronym;
+                })
+                .first();
+
+            $companyStateInput.val($stateOption.val() || '');
+        }
+
+        /**
+         * Limpa o ID relacional de cidade quando cidade ou estado visual mudam.
+         */
+        function clearCompanyLocationIds() {
+            $companyCityIdInput.val('');
+        }
+
+        /**
+         * Verifica se a localidade visual ja foi resolvida na base local.
+         */
+        function hasResolvedCompanyLocation() {
+            return Boolean($companyStateInput.val()) && Boolean($companyCityIdInput.val());
+        }
+
+        /**
+         * Resolve UF e cidade preenchidas para os IDs exigidos no cadastro final.
+         */
+        function resolveCompanyLocation() {
+            const city = $companyCityInput.val() || '';
+            const stateId = $companyStateInput.val() || '';
+
+            if (!city || !stateId) {
+                clearCompanyLocationIds();
+                updateFinishButtonState();
+                return;
             }
 
-            const cityStateValue = city && state ? `${city} - ${state}` : (city || state);
-            $companyCityStateInput.val(cityStateValue);
+            activeLocationRequestId += 1;
+            const requestId = activeLocationRequestId;
+            $finishButton.prop('disabled', true);
+
+            $.ajax({
+                url: resolveLocationUrl,
+                method: 'GET',
+                dataType: 'json',
+                data: {
+                    city,
+                    state_id: stateId,
+                },
+            })
+                .done(function (payload) {
+                    if (requestId !== activeLocationRequestId) {
+                        return;
+                    }
+
+                    if (!payload.success) {
+                        clearCompanyLocationIds();
+                        return;
+                    }
+
+                    $companyCityIdInput.val(payload.company_city_id || '');
+                })
+                .fail(function () {
+                    if (requestId !== activeLocationRequestId) {
+                        return;
+                    }
+
+                    clearCompanyLocationIds();
+                })
+                .always(function () {
+                    if (requestId !== activeLocationRequestId) {
+                        return;
+                    }
+
+                    updateFinishButtonState();
+                });
         }
 
         /**
@@ -189,13 +248,12 @@
          */
         function applyZipCodePayload(payload) {
             $companyCityInput.val(payload.localidade || '');
-            $companyStateInput.val((payload.uf || '').toUpperCase());
-            syncCityStateHiddenField();
+            selectCompanyStateByAcronym(payload.uf || '');
             $companyAddressInput.val(payload.logradouro || '');
             $companyNeighborhoodInput.val(payload.bairro || '');
             setZipResolvedFieldsLockState(true);
             $('#company_number').trigger('focus');
-            updateFinishButtonState();
+            resolveCompanyLocation();
         }
 
         /**
@@ -269,7 +327,7 @@
          * Libera clique apenas quando campos obrigatorios estiverem completos.
          */
         function updateFinishButtonState() {
-            $finishButton.prop('disabled', !hasValidRequiredAddressFields());
+            $finishButton.prop('disabled', !hasValidRequiredAddressFields() || !hasResolvedCompanyLocation());
         }
 
         // Event listeners
@@ -279,6 +337,7 @@
          */
         $companyZipCodeInput.on('input', function () {
             setZipResolvedFieldsLockState(false);
+            clearCompanyLocationIds();
 
             const formattedZipCode = formatZipCode($companyZipCodeInput.val() || '');
             $companyZipCodeInput.val(formattedZipCode);
@@ -313,13 +372,12 @@
             $companyZipCodeInput.val('01310-100');
             showZipAddressFields();
             $companyCityInput.val('Sao Paulo');
-            $companyStateInput.val('SP');
-            syncCityStateHiddenField();
+            selectCompanyStateByAcronym('SP');
             $companyAddressInput.val('Avenida Paulista');
             $companyNeighborhoodInput.val('Bela Vista');
             $('#company_number').val('1000');
             $('#company_complement').val('Conjunto 101');
-            updateFinishButtonState();
+            resolveCompanyLocation();
         });
 
         /**
@@ -327,16 +385,20 @@
          * o botao finalizar somente quando o preenchimento estiver completo.
          */
         $companyCityInput.on('input blur', function () {
-            syncCityStateHiddenField();
+            clearCompanyLocationIds();
             updateFinishButtonState();
         });
-        $companyStateInput.on('input blur', function () {
-            syncCityStateHiddenField();
+        $companyCityInput.on('blur', resolveCompanyLocation);
+        $companyStateInput.on('input change blur', function () {
+            clearCompanyLocationIds();
             updateFinishButtonState();
         });
+        $companyStateInput.on('change blur', resolveCompanyLocation);
         $('#company_address, #company_neighborhood, #company_number').on('input blur', updateFinishButtonState);
 
-        syncCityStateHiddenField();
+        if (!hasResolvedCompanyLocation()) {
+            resolveCompanyLocation();
+        }
         updateFinishButtonState();
     });
 </script>
