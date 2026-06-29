@@ -391,8 +391,17 @@
              * Finaliza fluxo do onboarding com feedback visual na tela.
              * Esta acao deve ocorrer apenas no botao final da etapa CEP.
              */
-            function finalizeOnboardingFlow() {
-                $('#onboarding-finalizing-message').stop(true, true).fadeIn(300);
+            function finalizeOnboardingFlow(redirectUrl) {
+                $('#onboarding-finalizing-message').stop(true, true).fadeIn(300, function () {
+                    if (!redirectUrl) {
+                        alert('Cadastro finalizado, mas a URL do sistema não foi retornada.');
+                        return;
+                    }
+
+                    window.setTimeout(function () {
+                        window.location.href = redirectUrl;
+                    }, 700);
+                });
             }
 
             /**
@@ -469,8 +478,8 @@
                     .then(function () {
                         return finalizeStep(clickedStepName);
                     })
-                    .done(function () {
-                        finalizeOnboardingFlow();
+                    .done(function (response) {
+                        finalizeOnboardingFlow(response.redirect_url);
                     })
                     .fail(function (xhr) {
                         const errorMessage = xhr.responseJSON?.message || 'Não foi possível finalizar o onboarding agora.';

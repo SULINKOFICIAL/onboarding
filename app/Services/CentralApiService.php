@@ -10,6 +10,8 @@ class CentralApiService
     private const CHECK_IDENTITY_ENDPOINT = '/api/central/onboarding/verificar-identidade';
     private const SAVE_STEP_ENDPOINT = '/api/central/onboarding/salvar-etapa';
     private const FINALIZE_ENDPOINT = '/api/central/onboarding/finalizar';
+    private const DEFAULT_TIMEOUT_SECONDS = 6;
+    private const FINALIZE_TIMEOUT_SECONDS = 180;
 
     /**
      * Verifica se a autenticação da central foi configurada.
@@ -44,19 +46,19 @@ class CentralApiService
      */
     public function finalizeOnboarding(array $payload): Response
     {
-        return $this->post(self::FINALIZE_ENDPOINT, $payload);
+        return $this->post(self::FINALIZE_ENDPOINT, $payload, self::FINALIZE_TIMEOUT_SECONDS);
     }
 
     /**
      * Executa requisição autenticada para a central.
      * Centraliza timeout e cabeçalhos padrão da integração.
      */
-    private function post(string $endpointPath, array $payload): Response
+    private function post(string $endpointPath, array $payload, int $timeoutSeconds = self::DEFAULT_TIMEOUT_SECONDS): Response
     {
         return Http::baseUrl($this->getBaseUrl())
             ->withToken($this->getToken())
             ->acceptJson()
-            ->timeout(6)
+            ->timeout($timeoutSeconds)
             ->post($endpointPath, $payload);
     }
 
