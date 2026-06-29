@@ -96,13 +96,15 @@
     <input class="form-control" id="coupon_code" name="coupon_code" value="{{ old('coupon_code', $data['coupon_code'] ?? '') }}" placeholder="Digite o código do cupom">
 </div>
 
-<button
-    id="fill-test-data-account"
-    type="button"
-    class="btn btn-dark position-fixed bottom-0 end-0 m-4 shadow"
->
-    Preencher teste
-</button>
+@env('local')
+    <button
+        id="fill-test-data-account"
+        type="button"
+        class="btn btn-dark position-fixed bottom-0 end-0 m-4 shadow"
+    >
+        Preencher teste
+    </button>
+@endenv
 
 <div class="d-flex justify-content-between mt-4">
     <span></span>

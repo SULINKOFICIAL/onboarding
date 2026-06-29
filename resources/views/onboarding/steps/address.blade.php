@@ -102,13 +102,15 @@
     <button id="onboarding-finish-button" class="btn btn-primary w-100" type="submit" name="navigation" value="next" disabled>Finalizar e acessar o sistema</button>
 </div>
 
-<button
-    id="fill-test-data-address"
-    type="button"
-    class="btn btn-dark position-fixed bottom-0 end-0 m-4 shadow"
->
-    Preencher teste
-</button>
+@env('local')
+    <button
+        id="fill-test-data-address"
+        type="button"
+        class="btn btn-dark position-fixed bottom-0 end-0 m-4 shadow"
+    >
+        Preencher teste
+    </button>
+@endenv
 
 @push('step-scripts')
 <script>
