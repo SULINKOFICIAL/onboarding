@@ -36,7 +36,7 @@ return [
     ],
 
     'core_business' => [
-        'url' => env('CORE_BUSINESS_URL', 'http://127.0.0.1:8001'),
+        'url' => env('CENTRAL_URL'),
         'token' => env('CENTRAL_TOKEN'),
     ],
 
