@@ -1,5 +1,5 @@
 <div class="mb-3">
-    <span class="badge badge-success onboarding-trial-badge">30 dias gratuitos</span>
+    <span class="badge badge-success onboarding-trial-badge">7 dias gratuitos</span>
 </div>
 <div class="d-flex gap-2 mb-3" aria-label="Progresso do onboarding">
     <div class="flex-fill rounded-pill h-10px bg-primary"></div>
@@ -87,14 +87,14 @@
         </ul>
     </div>
 </div>
-<div class="form-check mb-3">
+{{-- <div class="form-check mb-3">
     <input class="form-check-input" id="has_coupon" type="checkbox" name="has_coupon" value="1" @checked(old('has_coupon', $data['has_coupon'] ?? false))>
     <label class="form-check-label" for="has_coupon">Tenho cupom</label>
 </div>
 <div class="mb-3 d-none" id="coupon-field">
     <label class="form-label text-gray-700 fw-bolder mb-0" for="coupon_code">Cupom</label>
     <input class="form-control" id="coupon_code" name="coupon_code" value="{{ old('coupon_code', $data['coupon_code'] ?? '') }}" placeholder="Digite o código do cupom">
-</div>
+</div> --}}
 
 <button
     id="fill-test-data-account"
