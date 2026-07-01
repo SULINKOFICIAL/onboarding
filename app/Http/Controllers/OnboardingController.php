@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\City;
+use App\Models\State;
 use App\Services\CentralApiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class OnboardingController extends Controller
@@ -33,6 +36,9 @@ class OnboardingController extends Controller
 
         return view('onboarding.index', [
             'data' => $data,
+            'states' => State::where('status', 1)
+                ->orderBy('name')
+                ->get(['id', 'name', 'acronym']),
         ]);
     }
 
@@ -154,6 +160,36 @@ class OnboardingController extends Controller
         );
     }
 
+    public function resolveLocation(Request $request): JsonResponse
+    {
+        $payload = $request->validate([
+            'state_id' => ['required', 'integer', 'exists:states,id'],
+            'city' => ['required', 'string', 'max:255'],
+        ]);
+
+        $cityName = Str::lower(Str::ascii($payload['city']));
+        $cities = City::where('state_id', $payload['state_id'])
+            ->where('status', 1)
+            ->get(['id', 'name']);
+
+        $city = $cities->first(function ($cityItem) use ($cityName) {
+            return Str::lower(Str::ascii($cityItem->name)) === $cityName;
+        });
+
+        if (!$city) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cidade não encontrada na base local.',
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'company_state_id' => $payload['state_id'],
+            'company_city_id' => $city->id,
+        ]);
+    }
+
     /**
      * Normaliza o passo atual para garantir valor válido no fluxo.
      * Aplica fallback para o passo inicial quando entrada for inválida.
@@ -236,9 +272,8 @@ class OnboardingController extends Controller
 
             if ($response->successful()) {
                 $responseData = $response->json();
-                // No front, "exists" representa bloqueio de continuidade.
-                // A central define esse bloqueio com can_continue=false.
-                $exists = !(bool) ($responseData['can_continue'] ?? true);
+                $canContinue = $responseData['can_continue'] ?? true;
+                $exists = $canContinue !== true;
 
                 return $this->makeCheckResponse($exists, true);
             }
@@ -277,10 +312,28 @@ class OnboardingController extends Controller
                 return response()->json(array_merge(['success' => true], $response->json()));
             }
 
-            return response()->json([
+            $responseData = $response->json();
+            if (!is_array($responseData)) {
+                $responseData = [];
+            }
+
+            $message = $responseData['message'] ?? 'Falha na integração com a central.';
+            if (!is_string($message)) {
+                $message = 'Falha na integração com a central.';
+            }
+
+            $errorPayload = [
                 'success' => false,
-                'message' => (string) ($response->json('message') ?? 'Falha na integração com a central.'),
-            ], $response->status());
+                'message' => $message,
+            ];
+
+            foreach (['error', 'provisioning', 'tenant_id', 'redirect_url'] as $responseKey) {
+                if (array_key_exists($responseKey, $responseData)) {
+                    $errorPayload[$responseKey] = $responseData[$responseKey];
+                }
+            }
+
+            return response()->json($errorPayload, $response->status());
         } catch (\Throwable $exception) {
             Log::warning($logMessage, array_merge($logContext, [
                 'error' => $exception->getMessage(),

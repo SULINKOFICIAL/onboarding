@@ -74,6 +74,18 @@
         </div>
     </div>
 
+    @env('local')
+        <div class="position-fixed top-0 end-0 m-4 bg-white border rounded shadow-sm p-3 z-index-3" style="width: 220px;">
+            <label class="form-label fw-bold text-gray-700 mb-1" for="onboarding-local-step-selector">Passo</label>
+            <select class="form-select form-select-sm" id="onboarding-local-step-selector">
+                <option value="account">Conta</option>
+                <option value="company">Empresa</option>
+                <option value="goal">Objetivo</option>
+                <option value="address">Endereco</option>
+            </select>
+        </div>
+    @endenv
+
 @endsection
 
 @push('step-scripts')
@@ -83,6 +95,7 @@
             const stepOrder = ['account', 'company', 'goal', 'address'];
             const $form = $('form');
             const $sidePanel = $('#onboarding-side-panel');
+            const $localStepSelector = $('#onboarding-local-step-selector');
             const csrfToken = $form.find('input[name="_token"]').val();
             const saveStepUrl = '{{ route('onboarding.save-step') }}';
             const finalizeUrl = '{{ route('onboarding.finalize') }}';
@@ -305,9 +318,8 @@
 
                 if (stepName === 'address') {
                     payload.company_zip_code = ($('#company_zip_code').val() || '').trim();
-                    payload.company_city = ($('#company_city').val() || '').trim();
-                    payload.company_state = ($('#company_state').val() || '').trim();
-                    payload.company_city_state = ($('#company_city_state').val() || '').trim();
+                    payload.company_state_id = $('#company_state_id').val() || '';
+                    payload.company_city_id = $('#company_city_id').val() || '';
                     payload.company_address = ($('#company_address').val() || '').trim();
                     payload.company_neighborhood = ($('#company_neighborhood').val() || '').trim();
                     payload.company_number = ($('#company_number').val() || '').trim();
@@ -335,7 +347,16 @@
              * Reaproveita payload da última etapa para garantir consistência final.
              */
             function finalizeStep(stepName) {
-                const payload = collectStepPayload(stepName);
+                const payload = Object.assign(
+                    {},
+                    collectStepPayload('account'),
+                    collectStepPayload('company'),
+                    collectStepPayload('goal'),
+                    collectStepPayload(stepName),
+                    {
+                        step: stepName,
+                    }
+                );
 
                 return $.ajax({
                     url: finalizeUrl,
@@ -362,6 +383,7 @@
             function showStep(stepName) {
                 $('.onboarding-step').hide();
                 $(`.onboarding-step[data-step="${stepName}"]`).show();
+                $localStepSelector.val(stepName);
                 updateSidePanelBackground(stepName);
             }
 
@@ -378,8 +400,35 @@
              * Finaliza fluxo do onboarding com feedback visual na tela.
              * Esta acao deve ocorrer apenas no botao final da etapa CEP.
              */
-            function finalizeOnboardingFlow() {
-                $('#onboarding-finalizing-message').stop(true, true).fadeIn(300);
+            function finalizeOnboardingFlow(redirectUrl) {
+                $('#onboarding-finalizing-message').stop(true, true).fadeIn(300, function () {
+                    if (!redirectUrl) {
+                        alert('Cadastro finalizado, mas a URL do sistema não foi retornada.');
+                        return;
+                    }
+
+                    window.setTimeout(function () {
+                        window.location.href = redirectUrl;
+                    }, 700);
+                });
+            }
+
+            /**
+             * Monta mensagem de erro preservando detalhes retornados pela central.
+             */
+            function buildRequestErrorMessage(xhr, fallbackMessage) {
+                const response = xhr.responseJSON || {};
+                let errorMessage = response.message || fallbackMessage;
+
+                if (response.error) {
+                    errorMessage += `\n\nDetalhe: ${response.error}`;
+                }
+
+                if (response.provisioning && response.provisioning.step) {
+                    errorMessage += `\nEtapa: ${response.provisioning.step}`;
+                }
+
+                return errorMessage;
             }
 
             /**
@@ -392,6 +441,14 @@
             }
 
             // Event listeners
+            /**
+             * Permite navegar direto entre passos no ambiente local.
+             */
+            $localStepSelector.on('change', function () {
+                currentStep = $(this).val();
+                showStep(currentStep);
+            });
+
             /**
              * Escuta cliques nos botoes de navegacao, valida o step atual
              * e executa a transicao de tela sem recarregar a pagina.
@@ -421,7 +478,7 @@
                         navigateSteps(clickedStepName, direction);
                     })
                     .fail(function (xhr) {
-                        const errorMessage = xhr.responseJSON?.message || 'Não foi possível salvar esta etapa agora.';
+                        const errorMessage = buildRequestErrorMessage(xhr, 'Não foi possível salvar esta etapa agora.');
                         alert(errorMessage);
                     })
                     .always(function () {
@@ -448,11 +505,11 @@
                     .then(function () {
                         return finalizeStep(clickedStepName);
                     })
-                    .done(function () {
-                        finalizeOnboardingFlow();
+                    .done(function (response) {
+                        finalizeOnboardingFlow(response.redirect_url);
                     })
                     .fail(function (xhr) {
-                        const errorMessage = xhr.responseJSON?.message || 'Não foi possível finalizar o onboarding agora.';
+                        const errorMessage = buildRequestErrorMessage(xhr, 'Não foi possível finalizar o onboarding agora.');
                         alert(errorMessage);
                     })
                     .always(function () {
