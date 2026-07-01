@@ -10,8 +10,10 @@ class CentralApiService
     private const CHECK_IDENTITY_ENDPOINT = '/api/central/onboarding/verificar-identidade';
     private const SAVE_STEP_ENDPOINT = '/api/central/onboarding/salvar-etapa';
     private const FINALIZE_ENDPOINT = '/api/central/onboarding/finalizar';
+    private const PROVISION_ENDPOINT = '/api/central/onboarding/provisionar';
     private const DEFAULT_TIMEOUT_SECONDS = 6;
-    private const FINALIZE_TIMEOUT_SECONDS = 180;
+    private const FINALIZE_TIMEOUT_SECONDS = 30;
+    private const PROVISION_TIMEOUT_SECONDS = 30;
 
     /**
      * Verifica se a autenticação da central foi configurada.
@@ -41,12 +43,21 @@ class CentralApiService
     }
 
     /**
-     * Finaliza onboarding na central e dispara provisionamento.
-     * Envia payload consolidado da última etapa.
+     * Finaliza onboarding na central, criando os registros técnicos do tenant.
+     * Retorna rápido; o provisionamento em si roda em passos via advanceProvisioning.
      */
     public function finalizeOnboarding(array $payload): Response
     {
         return $this->post(self::FINALIZE_ENDPOINT, $payload, self::FINALIZE_TIMEOUT_SECONDS);
+    }
+
+    /**
+     * Avança uma etapa do provisionamento na central.
+     * Consumido em polling curto pelo front até a instalação concluir.
+     */
+    public function advanceProvisioning(array $payload): Response
+    {
+        return $this->post(self::PROVISION_ENDPOINT, $payload, self::PROVISION_TIMEOUT_SECONDS);
     }
 
     /**

@@ -67,10 +67,14 @@
         class="position-fixed top-0 start-0 w-100 h-100 px-5"
         style="display: none; z-index: 2000; background-color: rgba(255, 255, 255, 0.96);"
     >
-        <div class="d-flex align-items-center justify-content-center h-100">
-            <h1 class="fw-bolder mb-0 text-gray-900">
-                Estamos finalizando seu cadastro, vamos te encaminhando para o seu sistema.
+        <div class="d-flex flex-column align-items-center justify-content-center h-100 text-center">
+            <div class="spinner-border text-success mb-5" style="width: 3rem; height: 3rem;" role="status" aria-hidden="true"></div>
+            <h1 id="onboarding-finalizing-title" class="fw-bolder mb-3 text-gray-900">
+                Criando seu sistema...
             </h1>
+            <p id="onboarding-finalizing-subtitle" class="fs-4 text-gray-600 mb-0">
+                Isso pode levar alguns instantes. Não feche esta página.
+            </p>
         </div>
     </div>
 
@@ -99,6 +103,20 @@
             const csrfToken = $form.find('input[name="_token"]').val();
             const saveStepUrl = '{{ route('onboarding.save-step') }}';
             const finalizeUrl = '{{ route('onboarding.finalize') }}';
+            const provisionUrl = '{{ route('onboarding.provision') }}';
+
+            // Intervalo entre as consultas de progresso do provisionamento.
+            const provisioningPollIntervalMs = 3000;
+
+            // Mensagens de progresso por etapa da criação do sistema.
+            const provisioningMessages = {
+                subdomain: 'Criando o endereço do seu sistema...',
+                database: 'Preparando seu banco de dados...',
+                user_token: 'Configurando seu acesso...',
+                modules: 'Ativando seus módulos...',
+                finalizing: 'Quase lá, finalizando os últimos ajustes...',
+                completed: 'Tudo pronto! Redirecionando para o seu sistema...',
+            };
             const defaultBackgroundImage = '{{ asset('assets/media/bg-big.jpg') }}';
             const addressBackgroundImage = '{{ asset('assets/media/bg-finish.jpg') }}';
             let currentStep = 'account';
@@ -397,19 +415,85 @@
             }
 
             /**
-             * Finaliza fluxo do onboarding com feedback visual na tela.
-             * Esta acao deve ocorrer apenas no botao final da etapa CEP.
+             * Exibe a tela cheia de progresso da criação do sistema.
+             * Atualiza a mensagem conforme a etapa atual do provisionamento.
              */
-            function finalizeOnboardingFlow(redirectUrl) {
-                $('#onboarding-finalizing-message').stop(true, true).fadeIn(300, function () {
-                    if (!redirectUrl) {
-                        alert('Cadastro finalizado, mas a URL do sistema não foi retornada.');
+            function showFinalizingOverlay(message) {
+                if (message) {
+                    $('#onboarding-finalizing-title').text(message);
+                }
+                $('#onboarding-finalizing-message').stop(true, true).fadeIn(300);
+            }
+
+            /**
+             * Atualiza apenas a mensagem da tela de progresso já visível.
+             */
+            function updateFinalizingMessage(message) {
+                if (message) {
+                    $('#onboarding-finalizing-title').text(message);
+                }
+            }
+
+            /**
+             * Oculta a tela de progresso, usada quando ocorre falha no provisionamento.
+             */
+            function hideFinalizingOverlay() {
+                $('#onboarding-finalizing-message').stop(true, true).fadeOut(200);
+            }
+
+            /**
+             * Redireciona para o sistema recém criado após um breve intervalo,
+             * dando tempo do usuário ler a mensagem de conclusão.
+             */
+            function redirectToSystem(redirectUrl) {
+                if (!redirectUrl) {
+                    alert('Sistema criado, mas a URL de acesso não foi retornada.');
+                    return;
+                }
+
+                window.setTimeout(function () {
+                    window.location.href = redirectUrl;
+                }, 700);
+            }
+
+            /**
+             * Consulta o progresso do provisionamento em polling curto.
+             * Cada chamada avança uma etapa na central até concluir a instalação.
+             */
+            function pollProvisioning(tenantId, $button, originalFinishHtml) {
+                $.ajax({
+                    url: provisionUrl,
+                    method: 'POST',
+                    dataType: 'json',
+                    data: {
+                        _token: csrfToken,
+                        tenant_id: tenantId,
+                    },
+                }).done(function (response) {
+                    const status = response.status;
+
+                    if (status === 'completed') {
+                        updateFinalizingMessage(provisioningMessages.completed);
+                        redirectToSystem(response.redirect_url);
                         return;
                     }
 
-                    window.setTimeout(function () {
-                        window.location.href = redirectUrl;
-                    }, 700);
+                    if (status === 'provisioning') {
+                        updateFinalizingMessage(provisioningMessages[response.step] || 'Criando seu sistema...');
+                        window.setTimeout(function () {
+                            pollProvisioning(tenantId, $button, originalFinishHtml);
+                        }, provisioningPollIntervalMs);
+                        return;
+                    }
+
+                    // Qualquer outro status é tratado como falha do provisionamento.
+                    alert(response.message || 'Não foi possível criar o sistema agora.');
+                    hideFinalizingOverlay();
+                    $button.prop('disabled', false).html(originalFinishHtml);
+                }).fail(function (xhr) {
+                    alert(buildRequestErrorMessage(xhr, 'Não foi possível criar o sistema agora.'));
+                    hideFinalizingOverlay();
+                    $button.prop('disabled', false).html(originalFinishHtml);
                 });
             }
 
@@ -500,20 +584,36 @@
                     return;
                 }
 
-                $button.prop('disabled', true);
+                // Guarda o conteúdo original para restaurar caso ocorra falha.
+                const originalFinishHtml = $button.html();
+
+                // Coloca o botão em estado de carregamento durante a criação do sistema.
+                $button
+                    .prop('disabled', true)
+                    .html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Criando seu sistema, aguarde...');
+
                 persistStep(clickedStepName)
                     .then(function () {
                         return finalizeStep(clickedStepName);
                     })
                     .done(function (response) {
-                        finalizeOnboardingFlow(response.redirect_url);
+                        // Sem tenant_id não há como acompanhar o provisionamento.
+                        if (!response || !response.tenant_id) {
+                            alert('Não foi possível iniciar a criação do sistema.');
+                            $button.prop('disabled', false).html(originalFinishHtml);
+                            return;
+                        }
+
+                        // Mostra a tela de progresso e inicia o polling do provisionamento.
+                        showFinalizingOverlay(provisioningMessages.subdomain);
+                        pollProvisioning(response.tenant_id, $button, originalFinishHtml);
                     })
                     .fail(function (xhr) {
                         const errorMessage = buildRequestErrorMessage(xhr, 'Não foi possível finalizar o onboarding agora.');
                         alert(errorMessage);
-                    })
-                    .always(function () {
-                        $button.prop('disabled', false);
+
+                        // Restaura o botão apenas em falha, permitindo nova tentativa.
+                        $button.prop('disabled', false).html(originalFinishHtml);
                     });
             });
 

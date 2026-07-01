@@ -160,6 +160,59 @@ class OnboardingController extends Controller
         );
     }
 
+    /**
+     * Avança uma etapa do provisionamento na central e repassa o progresso.
+     * O front consome este endpoint em polling curto até a instalação concluir.
+     */
+    public function provision(Request $request): JsonResponse
+    {
+        $payload = $request->validate([
+            'tenant_id' => ['required', 'integer'],
+        ]);
+
+        if (!$this->centralApiService->hasConfiguredToken()) {
+            Log::warning('Falha ao provisionar onboarding na central.', [
+                'tenant_id' => $payload['tenant_id'],
+                'error' => 'Token da central não configurado em CENTRAL_TOKEN.',
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Token da central não configurado.',
+            ], 500);
+        }
+
+        try {
+            $response = $this->centralApiService->advanceProvisioning([
+                'tenant_id' => $payload['tenant_id'],
+            ]);
+
+            $responseData = $response->json();
+            if (!is_array($responseData)) {
+                $responseData = [];
+            }
+
+            if ($response->successful()) {
+                return response()->json($responseData);
+            }
+
+            return response()->json(
+                $responseData ?: ['status' => 'error', 'message' => 'Falha ao provisionar o sistema.'],
+                $response->status()
+            );
+        } catch (\Throwable $exception) {
+            Log::warning('Falha ao provisionar onboarding na central.', [
+                'tenant_id' => $payload['tenant_id'],
+                'error' => $exception->getMessage(),
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Falha ao provisionar o sistema.',
+        ], 500);
+    }
+
     public function resolveLocation(Request $request): JsonResponse
     {
         $payload = $request->validate([

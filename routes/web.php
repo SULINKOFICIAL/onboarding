@@ -11,3 +11,4 @@ Route::get('/check-document',   [OnboardingController::class, 'checkDocument'])-
 Route::get('/resolve-location', [OnboardingController::class, 'resolveLocation'])->name('onboarding.resolve-location');
 Route::post('/save-step',       [OnboardingController::class, 'saveStep'])->name('onboarding.save-step');
 Route::post('/finalize',        [OnboardingController::class, 'finalize'])->name('onboarding.finalize');
+Route::post('/provision',       [OnboardingController::class, 'provision'])->name('onboarding.provision');
